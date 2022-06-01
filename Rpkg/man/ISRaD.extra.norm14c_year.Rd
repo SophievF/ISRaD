@@ -5,38 +5,47 @@
 \title{ISRaD.extra.norm14c_year}
 \usage{
 ISRaD.extra.norm14c_year(
-  df,
   obs_d14c,
   obs_year,
   atm_zone,
   norm_year,
+  df,
+  slow = TRUE,
+  tau = FALSE,
   verbose = FALSE
 )
 }
 \arguments{
+\item{obs_d14c}{column name in df with observed delta 14c values to be normalized OR numeric value}
+
+\item{obs_year}{column name in df with year in which obs_d14c was observed (sample collection year) OR numeric value}
+
+\item{atm_zone}{column name in df with atmospheric zone for obs_d14c OR character string. Notes: column values/character string must be one of c("NHc14", "SHc14", "Tropicsc14"). "NHc14" = > 30 degrees latitude; "SHc14" = < -30 latitude; "Tropicsc14" = < 30 & > -30 degrees latitude.}
+
+\item{norm_year}{desired normalization year (numeric)}
+
 \item{df}{data frame with columns for observed d14c (obs_d14c), observation year (obs_year), and atmospheric zone (atm_zone)}
 
-\item{obs_d14c}{observed delta 14c value to be normalized}
+\item{slow}{if TRUE (default) normalized 14c value will be fit using the slower solution for tau}
 
-\item{obs_year}{year in which obs_d14c was observed (sample collection year)}
-
-\item{atm_zone}{atmospheric zone for obs_d14c. Must be one of c("NHc14", "SHc14", "Tropicsc14"). "NHc14" = > 30 degrees latitude; "SHc14" = < -30 latitude; "Tropicsc14" = < 30 & > -30 degrees latitude.}
-
-\item{norm_year}{desired normalization year}
+\item{tau}{if TRUE, the solution for tau will be returned along with the normalized 14c value (default = FALSE)}
 
 \item{verbose}{Show progress bar? TRUE/FALSE (default = FALSE)}
 }
 \value{
-data frame with normalized 14c values in new column.
+data frame with normalized 14c values in new column OR single normalized 14c value
 }
 \description{
 Normalizes delta 14c values to a given year (norm_year)
 }
 \details{
-Creates new column for normalized 14c in provided data frame. This function works by creating a one pool steady-state model using atmospheric 14c over the period 1850 to 2021. Turnover time is determined by fitting the model to the observed delta 14c (obs_d14c) in the observation year (obs_year), and the normalized 14c value is calculated by running the model forwards or backwards to the desired normalization year (norm_year).\cr\cr
-See the example for information on how to run the function when the "df" argument corresponds to a table from an ISRaD object, e.g. "flux", "layer", etc..\cr\cr
+This function can be run to return either a column of normalized 14c values in the supplied data frame, or a single normalized 14c value. For the data frame method, the inputs 'obs_d14c', 'obs_year', and 'atm_zone' should correspond to column names in the data frame (see Example 1). For the single value method, the inputs for 'obs_d14c', 'obs_year', and 'atm_zone' are single values (Example 2).\cr\cr
+The function works by creating a one pool steady-state model using atmospheric 14c over the period 1850 to 2021. Turnover time (tau^-1) is determined by fitting the model to the observed delta 14c (obs_d14c) in the observation year (obs_year), and the normalized 14c value is calculated by running the model forwards or backwards to the desired normalization year (norm_year). Note that highly negative values of delta 14c (e.g. < -100) are unaffected by normalization.\cr\cr
+The curvature of the bomb peak can lead to two viable solutions for tau in a one pool model. Determining which  value is more appropriate depends on the carbon dynamics of the system, and cannot be determined a priori ( Trumbore 2000). The 'slow' parameter can be used to select which tau is used for calculating the normalized 14c value.\cr\cr
+In certain cases the algorithm used to determine tau will fail to find a solution. This situation arises when the observed radiocarbon value is too high relative to the year of observation. This problem is well documented (Gaudinski et al. 2000), and can be solved by introducing a time-lag for the carbon inputs to the system. However, this functionality is beyond the scope of this function. In order to prevent the algorithm from being caught in an infinite loop, the function terminates the search for tau when the predicted delta 14c value drops below -100 per mille. Accordingly, the values estimated for normalized 14c in these cases will be approximately -100 per mille. In general, samples where the algorithm failed to converge can be identified in a larger dataset by searching for records with observed 14c values > 0 and normalized 14c values < 0.\cr\cr
+Example 1 shows how to run the function when the 'df' argument corresponds to a table from an ISRaD object, e.g. "flux", "layer", etc.\cr
+Example 2 shows how to run the function when single values are supplied and 'df' is absent.\cr\cr
 Note: There is no guarantee that normalized 14c values will be meaningful as the model assumes a well-mixed homogenous system, and this is rarely the case in soils.
-Can be very slow for large datasets!
 }
 \examples{
 # Load example dataset Gaudinski_2001
@@ -50,14 +59,26 @@ database.x <- ISRaD.extra.fill_rc(database.x)
 # Fill atmospheric 14c
 database.x <- ISRaD.extra.calc_atm14c(database.x)
 # Run normalization function for the year 2010 with layer data
+# Example 1
 database.x$layer <- ISRaD.extra.norm14c_year(
-  df = database.x$layer,
   obs_d14c = "lyr_14c",
   obs_year = "lyr_obs_date_y",
   atm_zone = "pro_graven_zone",
   norm_year = 2010,
+  df = database.x$layer,
   verbose = TRUE
 )
+# Example 2
+ISRaD.extra.norm14c_year(
+  obs_d14c = 182.8958,
+  obs_year = 1996,
+  atm_zone = "NHc14",
+  norm_year = 2010
+)
+}
+\references{
+Gaudinski et al. 2000. Soil carbon cycling in a temperate forest: radiocarbon-based estimates of residence times, sequestration rates and partitioning of fluxes. Biogeochemistry 51: 33–69 \url{https://doi.org/10.1023/A:1006301010014}\cr\cr
+Trumbore, S. 2000. Age of Soil Organic Matter and Soil Respiration: Radiocarbon Constraints on Belowground C Dynamics. Ecological Applications, 10(2): 399–411 \url{http://dx.doi.org/10.2307/2641102}
 }
 \author{
 J. Beem-Miller and J. Randerson
