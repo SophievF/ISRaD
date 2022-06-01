@@ -13,9 +13,9 @@ ISRaD_dir <- "C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_files"
 ISRaD_comp <- compile(dataset_directory = ISRaD_dir, write_report = TRUE, 
                       write_out = TRUE, return = "list")
 
-ISRaD_extra <- ISRaD.extra(ISRaD_comp, geodata_directory = 
-                             system.file("extdata", "geodata_directory", 
-                                         package = "ISRaD"))
+geo_dir <- "D:/Seafile/ISRaD_geospatial_data/ISRaD_extra_geodata"
+ISRaD_extra <- ISRaD.extra(ISRaD_comp, geodata_directory = geo_dir)
+
 names(ISRaD_extra)
 
 # To extract data from github
@@ -65,6 +65,19 @@ lyr_data %>%
   ggplot(aes(x = depth, y = lyr_14c, group = entry_name)) + 
   geom_point(size = 3, shape = 21) +
   theme_bw(base_size = 16)
+
+# Gap-fill missing global data with reported local data (or vice-versa)
+lyr_data %>% 
+  count(pro_soilOrder_0.5_deg_USDA)
+
+lyr_data <- lyr_data %>% 
+  mutate(pro_BIO12_mmyr_WC2.1 = ifelse(is.na(pro_BIO12_mmyr_WC2.1), 
+                                       pro_MAP, pro_BIO12_mmyr_WC2.1),
+         pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
+                                   pro_MAT, pro_BIO1_C_WC2.1),
+         pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
+                                      pro_soilOrder_0.5_deg_USDA, 
+                                      pro_usda_soil_order)) 
 
 saveRDS(lyr_data, paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
 

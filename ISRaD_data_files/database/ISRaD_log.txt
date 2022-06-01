@@ -1,6 +1,6 @@
 ISRaD Compilation Log 
  
- 2022-06-01 14:05:35 
+ 2022-06-01 17:09:44 
  - - - - - - - - - - - - - - - 
 
 
@@ -672,7 +672,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  332 compiling Sollins_2009.xlsx ... passed QAQC
 
- 333 compiling Spielvogel_2008.xlsx ... passed QAQC
+ 333 checking Spielvogel_2008.xlsx ...New data - passed QAQC
 
  334 checking Staub_2003_Staub_1994_Staub_1993.xlsx ...New data - passed QAQC
 
@@ -842,7 +842,7 @@ Summary statistics...
     site_long : 1138
     site_datum : 391
     site_elevation : 663
-    site_note : 598
+    site_note : 599
  profile tab...4085 observations
     entry_name : 4085
     site_name : 4085
