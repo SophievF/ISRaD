@@ -48,11 +48,11 @@ ggplot() +
 plotly::ggplotly(
   lyr_data %>% 
     ggplot(aes(x = depth, y = lyr_14c, group = entry_name)) + 
-    geom_point(size = 3, shape = 21) +
+    geom_point(aes(), size = 3, shape = 21) +
     theme_bw(base_size = 16) +
     theme(axis.text = element_text(color = "black")) +
     scale_x_continuous("Depth [cm]", expand = c(0.01,0.01)) +
-    scale_y_continuous(limits = c(-1505,305)) 
+    scale_y_continuous(limits = c(-1000,305)) 
 )
 
 #lyr_dd14c
@@ -124,7 +124,7 @@ lyr_data %>%
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("Depth [cm]") +
   scale_y_continuous("SOC [wt-%]", trans = "log10") +
-  scale_fill_viridis_c("Delta14C", limits = c(-1005,250),
+  scale_fill_viridis_c("Delta14C", limits = c(-1005,255),
                        option = "A") +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
@@ -145,40 +145,15 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
   scale_color_viridis_c("MAT [C]")
 
-summary(lyr_data$pro_BIO12_mmyr_WC2.1)
-
+# Manually assign climate zone for Czimczik_Unpublished
 lyr_data %>% 
-  count(pro_KG_present) %>% 
-  view()
-
-lyr_data %>% 
-  filter(pro_KG_present == 0) %>% 
+  filter(is.na(pro_KG_present)) %>% 
   count(entry_name)
 
 lyr_data_KG <- lyr_data %>% 
   mutate(pro_KG_present_reclas = case_when(
-    pro_KG_present == 1 ~ "Tropical, rainforest",
-    pro_KG_present == 2 ~ "Tropical, monsoon",
-    pro_KG_present == 3 ~ "Tropical, savannah",
-    pro_KG_present == 5 ~ "Arid, desert, cold",
-    pro_KG_present == 6 ~ "Arid, steppe, hot",
-    pro_KG_present == 7 ~ "Arid, steppe, cold",
-    pro_KG_present == 8 ~ "Temperate, dry summer, hot summer",
-    pro_KG_present == 9 ~ "Temperate, dry summer, warm summer",
-    pro_KG_present == 11 ~ "Temperate, dry winter, hot summer",
-    pro_KG_present == 12 ~ "Temperate, dry winter, warm summer",
-    pro_KG_present == 14 ~ "Temperate, no dry season, hot summer",
-    pro_KG_present == 15 ~ "Temperate, no dry season, warm summer",
-    pro_KG_present == 18 ~ "Cold, dry summer, warm summer",
-    pro_KG_present == 19 ~ "Cold, dry summer, cold summer",
-    pro_KG_present == 22 ~ "Cold, dry winter, warm summer",
-    pro_KG_present == 23 ~ "Cold, dry winter, cold summer",
-    pro_KG_present == 25 ~ "Cold, no dry season, hot summer",
-    pro_KG_present == 26 ~ "Cold, no dry season, warm summer",
-    pro_KG_present == 27 ~ "Cold, no dry season, cold summer",
-    pro_KG_present == 29 ~ "Polar, tundra",
-    #one study has no climate zone; assign manually
-    pro_KG_present == 0 ~ "Polar, tundra"
+    is.na(pro_KG_present) ~ "Polar, tundra",
+    TRUE ~ pro_KG_present
   ))
 
 lyr_data_KG %>% 
@@ -214,11 +189,11 @@ lyr_data_KG %>%
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
-lyr_data_soil %>% 
+lyr_data %>% 
   filter(is.na(pro_usda_soil_order)) %>% 
   count(entry_name)
 
-lyr_data_soil %>% 
+lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(depth <= 200) %>% 
   ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
@@ -234,7 +209,7 @@ lyr_data_soil %>%
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
-lyr_data_soil %>% 
+lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
   ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +

@@ -3,7 +3,8 @@
 # Sophie von Fromm #
 # 01/06/2022 #
 
-devtools::install_github('International-Soil-Radiocarbon-Database/ISRaD/Rpkg')
+devtools::install_github('International-Soil-Radiocarbon-Database/ISRaD/Rpkg',
+                         force = TRUE)
 
 library(ISRaD)
 library(tidyverse)
@@ -18,18 +19,21 @@ ISRaD_comp <- compile(dataset_directory = ISRaD_dir, write_report = TRUE,
 geo_dir <- "D:/Seafile/ISRaD_geospatial_data/ISRaD_extra_geodata"
 ISRaD_extra <- ISRaD.extra(ISRaD_comp, geodata_directory = geo_dir)
 
-names(ISRaD_extra)
+ISRaD_key <- ISRaD.extra.geospatial.keys(ISRaD_extra, 
+                                         geodata_keys = "D:/Seafile/ISRaD_geospatial_data/ISRaD_extra_keys")
+
+names(ISRaD_key)
 
 # To extract data from github
-ISRaD_extra <- ISRaD.getdata(directory = "C:/Users/sfromm/Documents/GitHub/ISRaD/ISRaD_data_files",
+ISRaD_extra <- ISRaD.getdata(directory = ISRaD_dir,
                              dataset = "full", extra = TRUE,
-                             force_download = FALSE)
+                             force_download = TRUE)
 
 saveRDS(ISRaD_extra, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
 ISRaD_extra <- readRDS(paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-lyr_data_all <- ISRaD.flatten(ISRaD_extra, 'layer')
+lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
 lyr_data_all %>% 
   count(entry_name)
@@ -71,6 +75,10 @@ lyr_data %>%
 # Gap-fill missing global data with reported local data (or vice-versa)
 lyr_data %>% 
   count(pro_usda_soil_order)
+lyr_data %>% 
+  count(pro_soilOrder_0.5_deg_USDA)
+lyr_data %>% 
+  count(pro_KG_present)
 
 summary(lyr_data$pro_BIO12_mmyr_WC2.1)
 
@@ -86,8 +94,8 @@ lyr_data_fill <- lyr_data %>%
 lyr_data_fill %>% 
   count(pro_usda_soil_order)
 
-summary(lyr_data$pro_BIO12_mmyr_WC2.1)
+summary(lyr_data_fill$pro_BIO12_mmyr_WC2.1)
 
-saveRDS(lyr_data, paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
+saveRDS(lyr_data_fill, paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
 
 
