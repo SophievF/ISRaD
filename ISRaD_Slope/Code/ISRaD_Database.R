@@ -3,6 +3,8 @@
 # Sophie von Fromm #
 # 01/06/2022 #
 
+devtools::install_github('International-Soil-Radiocarbon-Database/ISRaD/Rpkg')
+
 library(ISRaD)
 library(tidyverse)
 library(ggpubr)
@@ -19,9 +21,9 @@ ISRaD_extra <- ISRaD.extra(ISRaD_comp, geodata_directory = geo_dir)
 names(ISRaD_extra)
 
 # To extract data from github
-# ISRaD_extra_auto <- ISRaD.getdata(directory = ISRaD_dir,
-#                                   dataset = "full", extra = TRUE,
-#                                   force_download = FALSE)
+ISRaD_extra <- ISRaD.getdata(directory = "C:/Users/sfromm/Documents/GitHub/ISRaD/ISRaD_data_files",
+                             dataset = "full", extra = TRUE,
+                             force_download = FALSE)
 
 saveRDS(ISRaD_extra, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
@@ -68,9 +70,11 @@ lyr_data %>%
 
 # Gap-fill missing global data with reported local data (or vice-versa)
 lyr_data %>% 
-  count(pro_soilOrder_0.5_deg_USDA)
+  count(pro_usda_soil_order)
 
-lyr_data <- lyr_data %>% 
+summary(lyr_data$pro_BIO12_mmyr_WC2.1)
+
+lyr_data_fill <- lyr_data %>% 
   mutate(pro_BIO12_mmyr_WC2.1 = ifelse(is.na(pro_BIO12_mmyr_WC2.1), 
                                        pro_MAP, pro_BIO12_mmyr_WC2.1),
          pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
@@ -78,6 +82,11 @@ lyr_data <- lyr_data %>%
          pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
                                       pro_soilOrder_0.5_deg_USDA, 
                                       pro_usda_soil_order)) 
+
+lyr_data_fill %>% 
+  count(pro_usda_soil_order)
+
+summary(lyr_data$pro_BIO12_mmyr_WC2.1)
 
 saveRDS(lyr_data, paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
 

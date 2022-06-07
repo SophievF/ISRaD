@@ -214,23 +214,6 @@ lyr_data_KG %>%
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
-lyr_data_soil <- lyr_data_KG %>% 
-  mutate(pro_usda_soil_order = case_when(
-    pro_usda_soil_order == 150 ~ "Gelisols",
-    pro_usda_soil_order == 151 ~ "Histosols",
-    pro_usda_soil_order == 152 ~ "Spodosols",
-    pro_usda_soil_order == 153 ~ "Andisols",
-    pro_usda_soil_order == 154 ~ "Oxisols",
-    pro_usda_soil_order == 155 ~ "Vertisols",
-    pro_usda_soil_order == 156 ~ "Aridisols",
-    pro_usda_soil_order == 157 ~ "Ultisols",
-    pro_usda_soil_order == 158 ~ "Mollisols",
-    pro_usda_soil_order == 159 ~ "Alfisols",
-    pro_usda_soil_order == 160 ~ "Inceptisols",
-    pro_usda_soil_order == 161 ~ "Entisols",
-    TRUE ~ pro_usda_soil_order
-  ))
-
 lyr_data_soil %>% 
   filter(is.na(pro_usda_soil_order)) %>% 
   count(entry_name)
