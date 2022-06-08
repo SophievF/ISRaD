@@ -25,13 +25,13 @@ ISRaD_key <- ISRaD.extra.geospatial.keys(ISRaD_extra,
 names(ISRaD_key)
 
 # To extract data from github
-ISRaD_extra <- ISRaD.getdata(directory = ISRaD_dir,
-                             dataset = "full", extra = TRUE,
-                             force_download = TRUE)
+# ISRaD_extra <- ISRaD.getdata(directory = ISRaD_dir,
+#                              dataset = "full", extra = TRUE,
+#                              force_download = TRUE)
 
-saveRDS(ISRaD_extra, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
+saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-ISRaD_extra <- readRDS(paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
+# ISRaD_extra <- readRDS(paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -52,20 +52,27 @@ lyr_data <- lyr_data_all %>%
            lyr_bot >= 0 &
            pro_land_cover != "wetland" &
            is.na(pro_peatland)) %>% 
+  filter(lyr_top != "Inf",
+         lyr_bot != "Inf") %>% 
   unite("id", c(entry_name, site_name, pro_name), remove = FALSE) %>% 
   filter(!grepl("peat|Peat", id)) %>% 
   #remove permafrost studies
   #filter(is.na(lyr_all_org_neg)) %>% 
+  #remove Huang_1999: peat study not flagged
+  filter(entry_name != "Huang_1999") %>% 
   #filter CORG < 20
   filter(CORG <= 20) %>% 
   #depth = 200
   #filter(lyr_bot <= 200) %>% 
-  group_by(id) %>%
+  # group_by(id) %>%
   #Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
-  ungroup() %>% 
+  # filter(n() > 2) %>%
+  # ungroup() %>% 
   #calculate layer mid-depth
   mutate(depth = ((lyr_bot - lyr_top)/2) + lyr_top)
+
+lyr_data %>% 
+  count(entry_name)
 
 lyr_data %>% 
   ggplot(aes(x = depth, y = lyr_14c, group = entry_name)) + 
@@ -76,9 +83,11 @@ lyr_data %>%
 lyr_data %>% 
   count(pro_usda_soil_order)
 lyr_data %>% 
-  count(pro_soilOrder_0.5_deg_USDA)
+  count(pro_0.5_USDA_soilorder)
 lyr_data %>% 
-  count(pro_KG_present)
+  count(pro_KG_present_long)
+lyr_data %>% 
+  count(pro_KG_present_short)
 
 summary(lyr_data$pro_BIO12_mmyr_WC2.1)
 
@@ -88,11 +97,15 @@ lyr_data_fill <- lyr_data %>%
          pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
                                    pro_MAT, pro_BIO1_C_WC2.1),
          pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
-                                      pro_soilOrder_0.5_deg_USDA, 
+                                      pro_0.5_USDA_soilorder, 
                                       pro_usda_soil_order)) 
 
 lyr_data_fill %>% 
   count(pro_usda_soil_order)
+
+lyr_data_fill %>% 
+  filter(is.na(pro_usda_soil_order)) %>% 
+  count(entry_name)
 
 summary(lyr_data_fill$pro_BIO12_mmyr_WC2.1)
 

@@ -52,7 +52,7 @@ plotly::ggplotly(
     theme_bw(base_size = 16) +
     theme(axis.text = element_text(color = "black")) +
     scale_x_continuous("Depth [cm]", expand = c(0.01,0.01)) +
-    scale_y_continuous(limits = c(-1000,305)) 
+    scale_y_continuous() 
 )
 
 #lyr_dd14c
@@ -97,7 +97,7 @@ p1 <- lyr_data %>%
              size = 5, alpha = 0.8, shape = 21) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_y_reverse("Depth [cm]", expand = c(0.01,0.01)) +
+  scale_y_reverse("Depth [cm]") +
   scale_x_continuous(limits = c(-1505,305)) +
   scale_fill_viridis_d()
 
@@ -110,7 +110,7 @@ p2 <- lyr_data %>%
              size = 5, alpha = 0.8, shape = 21) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_y_reverse("Depth [cm]", expand = c(0.01,0.01)) +
+  scale_y_reverse("Depth [cm]") +
   scale_x_continuous(limits = c(-1505,305)) +
   scale_fill_viridis_d()
 
@@ -135,7 +135,7 @@ lyr_data %>%
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_color_viridis_c("MAP [mm]", trans = "log10")
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1)
 
 lyr_data %>% 
   ggplot(aes(y = lyr_14c, x = CORG, color = pro_BIO1_C_WC2.1)) +
@@ -147,13 +147,13 @@ lyr_data %>%
 
 # Manually assign climate zone for Czimczik_Unpublished
 lyr_data %>% 
-  filter(is.na(pro_KG_present)) %>% 
+  filter(is.na(pro_KG_present_long)) %>% 
   count(entry_name)
 
 lyr_data_KG <- lyr_data %>% 
   mutate(pro_KG_present_reclas = case_when(
-    is.na(pro_KG_present) ~ "Polar, tundra",
-    TRUE ~ pro_KG_present
+    is.na(pro_KG_present_long) ~ "Polar, tundra",
+    TRUE ~ pro_KG_present_long
   ))
 
 lyr_data_KG %>% 
@@ -171,7 +171,7 @@ lyr_data_KG %>%
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("Depth [cm]") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
@@ -185,7 +185,7 @@ lyr_data_KG %>%
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("SOC", trans = "log10") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
@@ -205,13 +205,29 @@ lyr_data %>%
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("Depth [cm]") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
 lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
-  ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
+    #reclassify soil type Schuur_2001: all Andisols
+    mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                         entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+                                         "Andisols")) %>% 
+    #reclassify soil type Guillet_1988: all Andisols
+    mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                         entry_name == "Guillet_1988",
+                                         "Andisols")) %>% 
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>% 
+  #reclassify soil type Kramer_2012: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Kramer_2012",
+                                       "Andisols")) %>% 
+  ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1, group = entry_name)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
   theme_bw(base_size = 12) +
@@ -220,6 +236,6 @@ lyr_data %>%
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("SOC", trans = "log10") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
