@@ -13,6 +13,10 @@ lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()
 lyr_data %>% 
   count(entry_name)
 
+
+lyr_data %>% 
+  count(id)
+
 names(lyr_data)
 
 ## Mapping sampling locations ##
@@ -41,6 +45,8 @@ ggplot() +
                      breaks = c(-100,0,100), limits = c(-160,180)) +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), 
                      breaks = c(-50,0,50), limits = c(-55,80))
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_Profiles_map_", format(Sys.time(), "%Y%m%d"),
+                     ".jpeg"), width = 10, height = 5)
 
 ## Data exploration ##
 
@@ -67,14 +73,23 @@ plotly::ggplotly(
 )
 
 # Density distribution
+p0 <- lyr_data %>% 
+  ggplot(aes(x = depth, y = lyr_14c)) + 
+  geom_hex(color = NA, binwidth = c(10,50)) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("Depth [cm]") +
+  scale_y_continuous(limits = c(-1005,305)) +
+  scale_fill_viridis_c(trans = "log10", limits = c(1,150))
+
 p1 <- lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_14c)) + 
   geom_hex(color = NA, binwidth = c(0.1,50)) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_y_continuous(limits = c(-1505,305)) +
-  scale_fill_viridis_c(trans = "log10")
+  scale_y_continuous(limits = c(-1005,305)) +
+  scale_fill_viridis_c(trans = "log10", limits = c(1,150))
 
 p2 <- lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_dd14c)) + 
@@ -85,7 +100,9 @@ p2 <- lyr_data %>%
   scale_y_continuous(limits = c(-1505,305)) +
   scale_fill_viridis_c(trans = "log10")
 
-ggarrange(p1, p2, common.legend = TRUE)
+ggarrange(p0, p1, common.legend = TRUE)
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_depth_hex_", format(Sys.time(), "%Y%m%d"),
+                     ".jpeg"), width = 11, height = 6)
 
 # Colored by sampling year
 p1 <- lyr_data %>% 
@@ -210,7 +227,14 @@ lyr_data %>%
                                ticks.linewidth = 2))
 
 lyr_data %>% 
-  drop_na(pro_usda_soil_order) %>% 
+  filter(CORG > 0) %>% 
+  drop_na(pro_usda_soil_order) %>%
+  group_by(id) %>%
+  # Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  ungroup() %>% 
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
     #reclassify soil type Schuur_2001: all Andisols
     mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
                                          entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
@@ -227,15 +251,29 @@ lyr_data %>%
   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
                                        entry_name == "Kramer_2012",
                                        "Andisols")) %>% 
-  ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1, group = entry_name)) + 
-  geom_point(shape = 21, size = 4, alpha = 0.7) +
+  ggplot(aes(x = CORG, y = lyr_14c)) +
+  geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 1, alpha = 0.7) +
+  geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "y", 
+            alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
   theme_bw(base_size = 12) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill =  NA)) +
-  scale_x_continuous("SOC", trans = "log10") +
-  scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
-  guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
+  scale_x_continuous("SOC [%]", trans = "log10") +
+  geom_smooth(orientation = "y", method = "gam") +
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", format(Sys.time(), "%Y%m%d"),
+                     ".jpeg"), width = 11, height = 6)
+
+lyr_data %>% 
+  filter(CORG > 0) %>% 
+  filter(pro_usda_soil_order == "Spodosols") %>% 
+  ggplot(aes(x = CORG, y = lyr_14c)) + 
+  geom_point(aes(color = entry_name), size = 2) +
+  geom_line(aes(group = id, color = entry_name), orientation = "y") +
+  theme_bw(base_size = 12) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC", trans = "log10")

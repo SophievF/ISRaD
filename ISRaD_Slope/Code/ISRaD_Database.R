@@ -61,13 +61,13 @@ lyr_data <- lyr_data_all %>%
   #remove Huang_1999: peat study not flagged
   filter(entry_name != "Huang_1999") %>% 
   #filter CORG < 20
-  filter(CORG <= 20) %>% 
+  filter(CORG <= 20 & CORG > 0) %>% 
   #depth = 200
   #filter(lyr_bot <= 200) %>% 
-  # group_by(id) %>%
+  group_by(id) %>%
   #Filter for studies that have more than 2 depth layers
-  # filter(n() > 2) %>%
-  # ungroup() %>% 
+  filter(n() > 2) %>%
+  ungroup() %>% 
   #calculate layer mid-depth
   mutate(depth = ((lyr_bot - lyr_top)/2) + lyr_top)
 
@@ -110,5 +110,4 @@ lyr_data_fill %>%
 summary(lyr_data_fill$pro_BIO12_mmyr_WC2.1)
 
 saveRDS(lyr_data_fill, paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
-
 
