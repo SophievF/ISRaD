@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-# ISRaD_extra <- readRDS(paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
+# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-08")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -64,10 +64,10 @@ lyr_data <- lyr_data_all %>%
   filter(CORG <= 20 & CORG > 0) %>% 
   #depth = 200
   #filter(lyr_bot <= 200) %>% 
-  group_by(id) %>%
-  #Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
-  ungroup() %>% 
+  # group_by(id) %>%
+  # #Filter for studies that have more than 2 depth layers
+  # filter(n() > 2) %>%
+  # ungroup() %>% 
   #calculate layer mid-depth
   mutate(depth = ((lyr_bot - lyr_top)/2) + lyr_top)
 

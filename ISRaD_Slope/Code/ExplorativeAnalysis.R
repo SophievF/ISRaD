@@ -13,7 +13,6 @@ lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()
 lyr_data %>% 
   count(entry_name)
 
-
 lyr_data %>% 
   count(id)
 
@@ -27,12 +26,17 @@ library(sf)
 world <- map_data("world") %>% 
   filter(region != "Antarctica")
 
+afsis <- read_csv("./Data/afsis_long_lat.csv")
+
 ggplot() +
   geom_map(
     data = world, map = world,
     aes(long, lat, map_id = region),
     color = "white", fill = "lightgrey")  +
   geom_point(data = lyr_data, 
+             aes(x = pro_long, y = pro_lat),
+             color = "#4D36C6", shape = 1, size = 3) +
+  geom_point(data = afsis, 
              aes(x = pro_long, y = pro_lat),
              color = "#4D36C6", shape = 1, size = 3) +
   theme_bw(base_size = 14) +
@@ -45,10 +49,10 @@ ggplot() +
                      breaks = c(-100,0,100), limits = c(-160,180)) +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), 
                      breaks = c(-50,0,50), limits = c(-55,80))
-ggsave(file = paste0("./Figure/ISRaD_14C_SOC_Profiles_map_", format(Sys.time(), "%Y%m%d"),
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_map_", Sys.Date(),
                      ".jpeg"), width = 10, height = 5)
 
-## Data exploration ##
+# Data exploration ##
 
 #lyr_14c
 plotly::ggplotly(
@@ -213,6 +217,28 @@ lyr_data %>%
 lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(depth <= 200) %>% 
+  group_by(id) %>%
+  # Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  ungroup() %>% 
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+                                       "Andisols")) %>% 
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>% 
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>% 
+  #reclassify soil type Kramer_2012: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Kramer_2012",
+                                       "Andisols")) %>%
   ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
@@ -225,6 +251,43 @@ lyr_data %>%
   scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_soiltype_MAP_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+lyr_data_fill %>% 
+  drop_na(pro_usda_soil_order) %>%
+  # Filter for studies that have more than 2 depth layers
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+                                       "Andisols")) %>% 
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>% 
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>% 
+  #reclassify soil type Kramer_2012: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Kramer_2012",
+                                       "Andisols")) %>% 
+  ggplot(aes(x = CORG, y = lyr_14c)) +
+  geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3, alpha = 0.7) +
+  facet_wrap(~pro_usda_soil_order) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("SOC [%]", trans = "log10") +
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
+                                ticks.linewidth = 2))
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 lyr_data %>% 
   filter(CORG > 0) %>% 
@@ -265,7 +328,7 @@ lyr_data %>%
   scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
-ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", format(Sys.time(), "%Y%m%d"),
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 lyr_data %>% 
