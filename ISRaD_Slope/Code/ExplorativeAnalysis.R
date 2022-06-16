@@ -26,17 +26,12 @@ library(sf)
 world <- map_data("world") %>% 
   filter(region != "Antarctica")
 
-afsis <- read_csv("./Data/afsis_long_lat.csv")
-
 ggplot() +
   geom_map(
     data = world, map = world,
     aes(long, lat, map_id = region),
     color = "white", fill = "lightgrey")  +
   geom_point(data = lyr_data, 
-             aes(x = pro_long, y = pro_lat),
-             color = "#4D36C6", shape = 1, size = 3) +
-  geom_point(data = afsis, 
              aes(x = pro_long, y = pro_lat),
              color = "#4D36C6", shape = 1, size = 3) +
   theme_bw(base_size = 14) +
@@ -84,7 +79,7 @@ p0 <- lyr_data %>%
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("Depth [cm]") +
   scale_y_continuous(limits = c(-1005,305)) +
-  scale_fill_viridis_c(trans = "log10", limits = c(1,150))
+  scale_fill_viridis_c(trans = "log10", limits = c(1,350))
 
 p1 <- lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_14c)) + 
@@ -93,7 +88,7 @@ p1 <- lyr_data %>%
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
   scale_y_continuous(limits = c(-1005,305)) +
-  scale_fill_viridis_c(trans = "log10", limits = c(1,150))
+  scale_fill_viridis_c(trans = "log10", limits = c(1,350))
 
 p2 <- lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_dd14c)) + 
@@ -216,11 +211,11 @@ lyr_data %>%
 
 lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
-  filter(depth <= 200) %>% 
+  filter(depth <= 100) %>%
   group_by(id) %>%
-  # Filter for studies that have more than 2 depth layers
+  # # Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
-  ungroup() %>% 
+  ungroup() %>%
   filter(pro_usda_soil_order != "Aridisols",
          pro_usda_soil_order != "Histosols") %>%
   #reclassify soil type Schuur_2001: all Andisols
@@ -250,11 +245,12 @@ lyr_data %>%
   scale_y_continuous("Delat14C") +
   scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
-                               ticks.linewidth = 2))
+                               ticks.linewidth = 2)) +
+  geom_smooth()
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-lyr_data_fill %>% 
+plotly::ggplotly(lyr_data %>% 
   drop_na(pro_usda_soil_order) %>%
   # Filter for studies that have more than 2 depth layers
   filter(pro_usda_soil_order != "Aridisols",
@@ -275,7 +271,7 @@ lyr_data_fill %>%
   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
                                        entry_name == "Kramer_2012",
                                        "Andisols")) %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) +
+  ggplot(aes(x = CORG, y = lyr_14c, group = entry_name)) +
   geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3, alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
   theme_bw(base_size = 16) +
@@ -286,6 +282,7 @@ lyr_data_fill %>%
   scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
                                 ticks.linewidth = 2))
+)
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
@@ -324,19 +321,11 @@ lyr_data %>%
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("SOC [%]", trans = "log10") +
-  geom_smooth(orientation = "y", method = "gam") +
+  # geom_smooth(orientation = "y", method = "gam") +
   scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-lyr_data %>% 
-  filter(CORG > 0) %>% 
-  filter(pro_usda_soil_order == "Spodosols") %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) + 
-  geom_point(aes(color = entry_name), size = 2) +
-  geom_line(aes(group = id, color = entry_name), orientation = "y") +
-  theme_bw(base_size = 12) +
-  theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("SOC", trans = "log10")
+
