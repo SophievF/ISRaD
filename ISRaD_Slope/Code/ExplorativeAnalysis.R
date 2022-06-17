@@ -8,7 +8,7 @@ library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
+lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-16"))
 
 lyr_data %>% 
   count(entry_name)
@@ -144,6 +144,24 @@ lyr_data %>%
                        option = "A") +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
+
+lyr_data %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(lyr_bot <= 200) %>% 
+  group_by(id) %>%
+  #Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  ungroup() %>% 
+  ggplot(aes(x = depth, y = lyr_14c)) +
+  geom_line(aes(group = id), alpha = 0.5) +
+  # geom_point() +
+  geom_smooth(method = "gam", formula = y ~ s(log(x)),
+              fill = "lightblue") +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) +
+  scale_y_continuous("Delta14C", expand = c(0,0), limits = c(-1000,350),
+                     breaks = seq(-1000,250,250)) 
 
 lyr_data %>% 
   ggplot(aes(y = lyr_14c, x = CORG, color = pro_BIO12_mmyr_WC2.1)) +
