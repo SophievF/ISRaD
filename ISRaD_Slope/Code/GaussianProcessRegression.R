@@ -11,7 +11,7 @@ source("./Code/GaussianProcess_functions_v2.R") # Update code.
 library(ISRaD)
 library(tidyverse)
 
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
+lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-21"))
 
 #Filter ISRaD data
 lyr_data_gpr <- lyr_data %>% 
@@ -21,9 +21,10 @@ lyr_data_gpr <- lyr_data %>%
   mutate(scale_value = scale(lyr_14c)) %>% 
   mutate(norm_value = (lyr_14c-min(lyr_14c))/(max(lyr_14c)-min(lyr_14c))) %>%
   filter(n() > 2) %>%
-  tibble() %>%
-  group_by(id) %>%
-  arrange(depth)  
+  ungroup() 
+
+lyr_data_gpr %>% 
+  count(id)
 
 #Visual exploration of the ISRaD data
 alpha = 0.2
@@ -53,7 +54,7 @@ data_alox %>%
 #to identify the profile ('id'), one column containing the depth ('depth'), one 
 #containing the 14C data ('value') and one containing the measurement error ('error', can be empty). 
 
-nsamples <- 1000
+nsamples <- 100
 
 #ncores is the number of cpus you have on your computer. If you put a value 
 #larger than the true number of cpus you have in your computer, it will be 
@@ -69,11 +70,11 @@ d <- compare_GP(lyr_data_gpr,
                 nsamples = nsamples, 
                 verbose = 0, 
                 engine = "laGP_gaupro", 
-                ncores = 20, keep_simulations = T)
+                ncores = 20, keep_simulations = FALSE)
 
-#Save the file with a filename containing the date. For 600 profiles, the file is ~1Gb. 
-#save(d, file = paste0("results_gsol_ISRaD_Alox", nsamples,"-", 
-#                      format(Sys.time(), "%Y%m%d%H%M"), ".RData"))
+#Save the file with a filename containing the date. For 600 profiles, the file is ~1Gb.
+save(d, file = paste0("./Data/GPR_TestRun_SOC_all_", nsamples,"_",
+                      format(Sys.time(), "%Y%m%d"), ".RData"))
 
 str(d)
 
@@ -99,27 +100,26 @@ for (p in 1: length(profnames)) {
            uci = t.test(C14values, conf.level = 0.95)$conf.int[2]) %>% 
     ungroup() %>% 
     ggplot() +
-    geom_line(aes(y = CORG, x = C14values, group = runs), alpha = alpha,
+    geom_line(aes(x = CORG, y = C14values, group = runs), alpha = alpha,
               color = "darkgrey", orientation = "y") +
-    geom_line(aes(y = CORG, x = mean),
-              orientation = "y", color = "red", size = 0.7) +
-    geom_ribbon(aes(xmin = mean-sd, xmax = mean+sd, y = CORG), alpha = 0.2,
+    geom_line(aes(x = CORG, y = mean),
+              orientation = "x", color = "red", size = 0.7) +
+    geom_ribbon(aes(ymin = mean-sd, ymax = mean+sd, x = CORG), alpha = 0.2,
                 fill = "red", color = "black") +
-    geom_point(data = lyr_data_gpr %>% 
+    geom_point(data = data_alox %>% 
                  filter(id == profnames[p]),
-               aes(y = CORG, x = lyr_14c)) +
-    geom_errorbarh(data = lyr_data_gpr %>% 
+               aes(x = CORG, y = lyr_14c)) +
+    geom_errorbar(data = data_alox %>% 
                      filter(id == profnames[p]),
-                   aes(y = CORG, 
-                       xmax = lyr_14c*(1+error), 
-                       xmin = lyr_14c*(1-error)),
-                   height = 1) + 
+                   aes(x = CORG, 
+                       ymax = lyr_14c*(1+error), 
+                       ymin = lyr_14c*(1-error))) + 
     theme_bw(base_size = 14) +
     theme(legend.position = "none",
           axis.text = element_text(color = "black")) +
     ggtitle(profnames[p])  +
-    scale_y_reverse() +
-    scale_x_continuous(expand = c(0,0))
+    scale_x_continuous(trans = "log10") +
+    scale_y_continuous(expand = c(0,0))
 }
 
 print(ggpubr::ggarrange(g[[1]], g[[2]], g[[3]], g[[4]]))
@@ -166,7 +166,7 @@ as.dendrogram(clust) %>%
   ggraph::geom_node_text(aes(label = label, filter = leaf), angle = 90, 
                          hjust = 1, size = 3) + 
   ggraph::theme_graph() + 
-  scale_y_continuous(limits = c(-20,NA))
+  scale_y_continuous(limits = c(-900,NA))
 
 # ggsave(paste0("dendrogram",nsamples,"runs_Alox_", 
 #               format(Sys.time(), "%d%m%y"),".jpeg"), 
@@ -185,6 +185,29 @@ ggplot(data_grp, aes(x = CORG, y = lyr_14c)) +
     scale_x_continuous(trans = "log10") + 
     theme(legend.position = "none")
 
+ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
+  geom_point(aes(colour = pro_KG_present_long)) + 
+  geom_line(aes(group = id, colour = pro_KG_present_long), orientation = "y") + 
+  facet_grid(cols = vars(group)) + 
+  scale_x_continuous(trans = "log10")
+
+ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
+  geom_point(aes(colour = factor(group))) + 
+  geom_line(aes(group = id, colour = factor(group)), orientation = "y") + 
+  facet_grid(cols = vars(pro_KG_present_long)) + 
+  scale_x_continuous(trans = "log10")
+
+ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
+  geom_point(aes(colour = factor(group))) + 
+  geom_line(aes(group = id, colour = factor(group)), orientation = "y") + 
+  facet_grid(cols = vars(pro_usda_soil_order)) + 
+  scale_x_continuous(trans = "log10")
+
+data_grp %>% 
+  dplyr::select(id, CORG,lyr_14c, group,
+                lyr_al_ox, pro_usda_soil_order, pro_BIO12_mmyr_WC2.1) %>% 
+  view()
+
 # ggsave(paste0("data_groups",nsamples,"runs_Alox_", 
 #               format(Sys.time(), "%d%m%y"),".jpeg"), 
 #        width = 12, height = 9)
@@ -195,8 +218,8 @@ ggplot(data_grp, aes(x = CORG, y = lyr_14c)) +
             orientation = "y") +
   scale_x_continuous(trans = "log10") + 
   theme_classic() + 
-  scale_colour_manual(breaks = as.factor(1:7), 
-                      values = colorspace::rainbow_hcl(7, c = 90, l = 50)[c(3,2,1,4,5,6,7)]) 
+  scale_colour_manual(breaks = as.factor(1:3), 
+                      values = colorspace::rainbow_hcl(3, c = 90, l = 50)[c(3,2,1,4,5,6,7)]) 
 
 # ggsave(paste0("data_groups_v2",nsamples,"runs_Alox_", 
 #               format(Sys.time(), "%d%m%y"),".jpeg"), 

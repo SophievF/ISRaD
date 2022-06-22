@@ -60,6 +60,8 @@ lyr_data <- lyr_data_all %>%
   #filter(is.na(lyr_all_org_neg)) %>% 
   #remove Huang_1999: peat study not flagged
   filter(entry_name != "Huang_1999") %>% 
+  #remove Bol_1996: peat study not flagged
+  filter(entry_name != "Bol_1996") %>% 
   #filter CORG < 20
   filter(CORG <= 20 & CORG > 0) %>% 
   #depth = 200

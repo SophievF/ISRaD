@@ -8,9 +8,14 @@ library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-16"))
+lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-21"))
 
 lyr_data %>% 
+  # filter(lyr_bot <= 200) %>% 
+  # group_by(id) %>%
+  # #Filter for studies that have more than 2 depth layers
+  # filter(n() > 2) %>%
+  # ungroup() %>% 
   count(entry_name)
 
 lyr_data %>% 
@@ -229,7 +234,7 @@ lyr_data %>%
 
 lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
-  filter(depth <= 100) %>%
+  filter(depth <= 200) %>%
   group_by(id) %>%
   # # Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
@@ -237,21 +242,21 @@ lyr_data %>%
   filter(pro_usda_soil_order != "Aridisols",
          pro_usda_soil_order != "Histosols") %>%
   #reclassify soil type Schuur_2001: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
-                                       "Andisols")) %>% 
-  #reclassify soil type Guillet_1988: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Guillet_1988",
-                                       "Andisols")) %>% 
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>% 
-  #reclassify soil type Kramer_2012: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Kramer_2012",
-                                       "Andisols")) %>%
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Guillet_1988: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Guillet_1988",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Torn_1997: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Torn_1997",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Kramer_2012: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Kramer_2012",
+  #                                      "Andisols")) %>%
   ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
@@ -274,21 +279,21 @@ plotly::ggplotly(lyr_data %>%
   filter(pro_usda_soil_order != "Aridisols",
          pro_usda_soil_order != "Histosols") %>%
   #reclassify soil type Schuur_2001: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
-                                       "Andisols")) %>% 
-  #reclassify soil type Guillet_1988: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Guillet_1988",
-                                       "Andisols")) %>% 
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>% 
-  #reclassify soil type Kramer_2012: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Kramer_2012",
-                                       "Andisols")) %>% 
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Guillet_1988: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Guillet_1988",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Torn_1997: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Torn_1997",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Kramer_2012: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Kramer_2012",
+  #                                      "Andisols")) %>% 
   ggplot(aes(x = CORG, y = lyr_14c, group = entry_name)) +
   geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3, alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
@@ -305,34 +310,33 @@ ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 lyr_data %>% 
-  filter(CORG > 0) %>% 
   drop_na(pro_usda_soil_order) %>%
-  group_by(id) %>%
-  # Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
-  ungroup() %>% 
+  # group_by(id) %>%
+  # # Filter for studies that have more than 2 depth layers
+  # filter(n() > 2) %>%
+  # ungroup() %>% 
   filter(pro_usda_soil_order != "Aridisols",
          pro_usda_soil_order != "Histosols") %>%
     #reclassify soil type Schuur_2001: all Andisols
-    mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                         entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
-                                         "Andisols")) %>% 
-    #reclassify soil type Guillet_1988: all Andisols
-    mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                         entry_name == "Guillet_1988",
-                                         "Andisols")) %>% 
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>% 
-  #reclassify soil type Kramer_2012: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Kramer_2012",
-                                       "Andisols")) %>% 
+  #   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                        entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+  #                                        "Andisols")) %>% 
+  #   #reclassify soil type Guillet_1988: all Andisols
+  #   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                        entry_name == "Guillet_1988",
+  #                                        "Andisols")) %>% 
+  # #reclassify soil type Torn_1997: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Torn_1997",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Kramer_2012: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Kramer_2012",
+  #                                      "Andisols")) %>% 
   ggplot(aes(x = CORG, y = lyr_14c)) +
-  geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 1, alpha = 0.7) +
-  geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "y", 
-            alpha = 0.7) +
+  # geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3) +
+  geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "x",
+            size = 1) +
   facet_wrap(~pro_usda_soil_order) +
   theme_bw(base_size = 12) +
   theme(axis.text = element_text(color = "black"),
@@ -346,4 +350,148 @@ lyr_data %>%
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
+### Add WRB data
+library(raster)
+WRB_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/soilOrder_250_x_x_m__WRB.tif"
+WRB_raster <- raster::raster(WRB_dir)
+WRB_soil_type <- raster::extract(WRB_raster, cbind(lyr_data$pro_long,
+                                                   lyr_data$pro_lat))
+
+
+summary(WRB_soil_type)
+
+### Add HLZ data
+library(sf)
+library(tmap)
+HLZ_directory <- "D:/Sophie/PhD/AfSIS_GlobalData/HLZ/holdrid/holdrid.shp"
+
+HLZ <- sf::st_read(HLZ_directory)
+st_crs(HLZ) <- 4326
+
+lyr_data_sf <- sf::st_as_sf(lyr_data, 
+                            coords = c("pro_long", "pro_lat"), 
+                            crs = 4326)
+
+tmap_mode("view")
+tm_shape(HLZ, projection = 4326) +
+  tm_polygons(col = "DESC") +
+  tm_shape(lyr_data_sf) +
+  tm_dots(popup.vars = "id")
+
+lyr_data_HLZ_sf <- sf::st_join(lyr_data_sf, HLZ, 
+                               left = TRUE)
+
+lyr_data_HLZ_NA <- lyr_data_HLZ_sf %>% 
+  tibble() %>% 
+  dplyr::select(-c(geometry, AREA:FREQUENCY, SYMBOL)) %>% 
+  rename(HLZ_Zone = DESC)
+
+names(lyr_data_HLZ_NA)
+
+lyr_data_HLZ_NA %>% 
+  filter(is.na(HLZ_Zone)) %>% 
+  count(id) %>% view()
+
+# lyr_data_HLZ_NA %>% 
+#   filter(entry_name == "Kramer_2012") %>% 
+#   count(id, HLZ_Zone)
+# 
+# lyr_data_HLZ_NA %>% 
+#   filter(entry_name == "Torn_1997") %>% 
+#   filter(is.na(HLZ_Zone)) %>% 
+#   count(id)
+# 
+# tmap_mode("view")
+# tm_shape(HLZ, projection = 4326) +
+#   tm_polygons(col = "DESC") +
+#   tm_shape(lyr_data_sf[(lyr_data_sf$entry_name == "Crow_2015"|
+#                           lyr_data_sf$entry_name == "Cusack_2012"|
+#                           lyr_data_sf$entry_name == "Kramer_2012"|
+#                           lyr_data_sf$entry_name == "Torn_1997"),]) +
+#   tm_dots(popup.vars = "id")
+
+#Manually assign missing HLZ
+lyr_data_HLZ <- lyr_data_HLZ_NA %>% 
+  mutate(HLZ_Zone = ifelse(entry_name == "Basile_Doelsch_2005", 
+                            "Subtropical dry forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Heckman_2018_CA_Mollisol_SCT2", 
+                           "Warm temperate dry forest", HLZ_Zone)) %>%
+  mutate(HLZ_Zone = ifelse(id == "Heckman_2018_MI_Spodosol_MiB1", 
+                           "Cool temperate moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Lassey_1996_Westland_Hokotika", 
+                           "Cool temperate wet forest", HLZ_Zone)) %>% 
+  #Could also be "Cool temperate wet forest"
+  mutate(HLZ_Zone = ifelse(id == "Lassey_1996_Hawera_Whareroa road", 
+                           "Warm temperate moist forest", HLZ_Zone)) %>%
+  #Could also be "Cool temperate steppe"
+  mutate(HLZ_Zone = ifelse(grepl("Lawrence_2021_Santa Cruz_SC", id),
+                           "Warm temperate dry forest", HLZ_Zone)) %>%
+  mutate(HLZ_Zone = ifelse(grepl("McFarlane_2013_MI-Coarse UMBS", id),
+                           "Cool temperate moist forest", HLZ_Zone)) %>%
+  mutate(HLZ_Zone = ifelse(grepl("Sanaiotti_2002_Alter do Chão_Alter do Chão", id),
+                           "Subtropical moist forest", HLZ_Zone)) %>%
+  #Could also be "Subtropical moist forest" or "Subtropical dry forest"
+  mutate(HLZ_Zone = ifelse(entry_name == "Schwartz_1992", 
+                           "Tropical dry forest", HLZ_Zone)) %>%
+  #Most of Hawaii has missing data
+  mutate(HLZ_Zone = ifelse(id == "Crow_2015_AND_EUC_Composite", 
+                           "Warm temperate wet forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Crow_2015_MOL_AG_Composite", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Crow_2015_OX_AG_Composite", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(entry_name == "Cusack_2012", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Kramer_2012_Pololu_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Amalu-precipitation_Amalu-precipitation_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kohala (150ky)_Kohala (150ky)_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kokee (4.1my)_Kokee (4.1my)_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kolekole (1.4my)_Kolekole (1.4my)_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) 
+
+lyr_data_HLZ %>% 
+  filter(is.na(HLZ_Zone)) %>% 
+  count(id)
+
+lyr_data_HLZ %>% 
+  count(HLZ_Zone)
+
+lyr_data_HLZ %>% 
+  filter(depth <= 200) %>%
+  group_by(id) %>%
+  # # Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  ungroup() %>%
+  ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
+  geom_point(shape = 21, size = 4, alpha = 0.7) +
+  facet_wrap(~HLZ_Zone) +
+  theme_bw(base_size = 12) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("Depth [cm]") +
+  scale_y_continuous("Delta14C") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
+                               ticks.linewidth = 2))
+
+lyr_data_HLZ %>% 
+  ggplot(aes(x = CORG, y = lyr_14c)) +
+  geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3) +
+  # geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "y", 
+  #           alpha = 0.7) +
+  facet_wrap(~HLZ_Zone) +
+  theme_bw(base_size = 12) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("SOC [%]", trans = "log10") +
+  # geom_smooth(orientation = "y", method = "gam") +
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
+                                ticks.linewidth = 2))
 
