@@ -1,6 +1,6 @@
 ISRaD Compilation Log 
  
- 2022-06-21 14:13:43 
+ 2022-06-23 17:25:47 
  - - - - - - - - - - - - - - - 
 
 
@@ -184,7 +184,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  88 compiling Doetterl_2015.xlsx ... passed QAQC
 
- 89 checking Doetterl_2021_Bukombe_2021_Reichenbach_2021.xlsx ...New data - passed QAQC
+ 89 checking Doetterl_2021_Bukombe_2021_Reichenbach_2021.xlsx ...New data - failed QAQC. Check report in QAQC folder.
 
  90 compiling Dommain_2015.xlsx ... passed QAQC
 
@@ -278,7 +278,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  135 compiling Harden_1999.xlsx ... passed QAQC
 
- 136 compiling Harden_2002.xlsx ... passed QAQC
+ 136 checking Harden_2002.xlsx ...New data - passed QAQC
 
  137 compiling Hardie_2009.xlsx ... passed QAQC
 
@@ -370,7 +370,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  181 compiling Kettles_2003.xlsx ... passed QAQC
 
- 182 compiling Khomo_2017.xlsx ... passed QAQC
+ 182 checking Khomo_2017.xlsx ...New data - passed QAQC
 
  183 compiling Klapstein_2014.xlsx ... passed QAQC
 
@@ -704,7 +704,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  348 compiling Tegen_1996.xlsx ... passed QAQC
 
- 349 compiling Telles_2003.xlsx ... passed QAQC
+ 349 checking Telles_2003.xlsx ...New data - passed QAQC
 
  350 compiling Tifafi_2018.xlsx ... passed QAQC
 
@@ -816,57 +816,57 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
 Summary statistics...
 
- metadata tab...422 observations
-    entry_name : 422
-    doi : 422
-    compilation_doi : 174
-    curator_name : 422
-    curator_organization : 422
-    curator_email : 422
-    modification_date_y : 422
-    modification_date_m : 422
-    modification_date_d : 422
-    contact_name : 422
-    contact_email : 422
+ metadata tab...419 observations
+    entry_name : 419
+    doi : 419
+    compilation_doi : 171
+    curator_name : 419
+    curator_organization : 419
+    curator_email : 419
+    modification_date_y : 419
+    modification_date_m : 419
+    modification_date_d : 419
+    contact_name : 419
+    contact_email : 419
     contact_orcid_id : 51
-    bibliographical_reference : 422
-    metadata_note : 195
-    associated_datasets : 70
-    template_version : 307
- site tab...1305 observations
-    entry_name : 1305
-    site_name : 1305
-    site_lat : 1305
-    site_long : 1305
+    bibliographical_reference : 419
+    metadata_note : 192
+    associated_datasets : 69
+    template_version : 306
+ site tab...1299 observations
+    entry_name : 1299
+    site_name : 1299
+    site_lat : 1299
+    site_long : 1299
     site_datum : 551
     site_elevation : 808
     site_note : 775
- profile tab...4329 observations
-    entry_name : 4329
-    site_name : 4329
-    plot_name : 1383
-    pro_name : 4329
-    pro_note : 1312
-    pro_lat : 2245
-    pro_long : 2245
-    pro_elevation : 908
-    pro_treatment : 4329
+ profile tab...4252 observations
+    entry_name : 4252
+    site_name : 4252
+    plot_name : 1306
+    pro_name : 4252
+    pro_note : 1235
+    pro_lat : 2168
+    pro_long : 2168
+    pro_elevation : 831
+    pro_treatment : 4252
     pro_treatment_note : 677
     pro_comp : 552
     pro_reps : 744
-    pro_MAT : 2263
-    pro_MAP : 2455
+    pro_MAT : 2186
+    pro_MAP : 2378
     pro_peatland : 1244
     pro_usda_soil_order : 1987
     pro_soil_series : 523
-    pro_soil_taxon : 1887
-    pro_soil_taxon_sys : 1676
+    pro_soil_taxon : 1810
+    pro_soil_taxon_sys : 1599
     pro_chrono_name : 27
     pro_soil_age : 208
     pro_soil_age_note : 40
     pro_MAST : 207
     pro_MASWC : 214
-    pro_land_cover : 4046
+    pro_land_cover : 3969
     pro_lc_phenology : 240
     pro_lc_leaf_type : 224
     pro_lc_photosyn_path : 220
@@ -877,12 +877,12 @@ Summary statistics...
     pro_depth_water : 217
     pro_thaw_depth : 201
     pro_parent_material : 969
-    pro_parent_chem : 657
-    pro_parent_material_notes : 1281
+    pro_parent_chem : 580
+    pro_parent_material_notes : 1204
     pro_2d_position : 293
     pro_aspect : 171
     pro_aspect_deg : 94
-    pro_slope : 444
+    pro_slope : 367
     pro_slope_shape : 103
     pro_drainage_class : 524
     pro_soc : 228
@@ -938,21 +938,21 @@ Summary statistics...
     flx_14c_sd : 35
     flx_fraction_modern : 1130
     flx_fraction_modern_sigma : 72
- layer tab...35969 observations
-    entry_name : 35969
-    site_name : 35969
-    pro_name : 35969
-    lyr_name : 35969
-    lyr_obs_date_y : 35969
+ layer tab...35722 observations
+    entry_name : 35722
+    site_name : 35722
+    pro_name : 35722
+    lyr_name : 35722
+    lyr_obs_date_y : 35722
     lyr_obs_date_m : 8792
     lyr_obs_date_d : 4324
     lyr_all_org_neg : 24903
-    lyr_top : 35969
-    lyr_bot : 35969
+    lyr_top : 35722
+    lyr_bot : 35722
     lyr_hzn : 24687
-    lyr_comp : 1568
+    lyr_comp : 1321
     lyr_igsn : 8
-    lyr_note : 15873
+    lyr_note : 15626
     lyr_color : 1212
     lyr_color_dry : 19
     lyr_burn_ev : 222
@@ -980,11 +980,11 @@ Summary statistics...
     lyr_ecec : 251
     lyr_bs : 374
     lyr_c_inorg : 1578
-    lyr_c_org : 4122
-    lyr_c_tot : 9662
+    lyr_c_org : 3879
+    lyr_c_tot : 9419
     lyr_soc : 1948
     lyr_soc_sigma : 297
-    lyr_n_tot : 7855
+    lyr_n_tot : 7612
     lyr_son : 263
     lyr_c_to_n : 2878
     lyr_loi : 18206
@@ -993,11 +993,11 @@ Summary statistics...
     lyr_rc_lab : 4074
     lyr_rc_lab_number : 3294
     lyr_rc_year : 3457
-    lyr_14c : 4052
-    lyr_14c_sigma : 2870
+    lyr_14c : 3809
+    lyr_14c_sigma : 2627
     lyr_14c_sd : 89
-    lyr_fraction_modern : 6073
-    lyr_fraction_modern_sigma : 5427
+    lyr_fraction_modern : 5830
+    lyr_fraction_modern_sigma : 5184
     lyr_fraction_modern_sd : 9
     lyr_mbc_method : 185
     lyr_raw_mbc : 14
@@ -1147,28 +1147,28 @@ Summary statistics...
     frc_fe_oxides : 7
     frc_imog_alloph : 18
     frc_zeolite : 3
- incubation tab...2686 observations
-    entry_name : 2686
-    site_name : 2686
-    pro_name : 2686
-    lyr_name : 2686
+ incubation tab...2439 observations
+    entry_name : 2439
+    site_name : 2439
+    pro_name : 2439
+    lyr_name : 2439
     frc_name : 185
-    inc_name : 2555
-    inc_type : 2686
+    inc_name : 2308
+    inc_type : 2439
     inc_note : 1253
     inc_obs_date_y : 1451
     inc_obs_date_m : 866
     inc_obs_date_d : 675
     inc_duration : 1646
-    inc_duration_type : 2179
-    inc_analyte : 482
+    inc_duration_type : 1932
+    inc_analyte : 235
     inc_anaerobic : 8
-    inc_temp : 2024
-    inc_moisture_type : 2164
-    inc_moisture : 981
-    inc_moisture_units : 882
+    inc_temp : 1777
+    inc_moisture_type : 1917
+    inc_moisture : 734
+    inc_moisture_units : 635
     inc_C_respired : 146
-    inc_flux : 1182
+    inc_flux : 1036
     inc_flux_units : 929
     inc_13c : 1406
     inc_13c_sd : 120
@@ -1176,9 +1176,9 @@ Summary statistics...
     inc_rc_lab_number : 709
     inc_rc_year : 1170
     inc_14c : 1646
-    inc_14c_sigma : 1148
-    inc_14c_sd : 254
-    inc_fraction_modern : 920
-    inc_fraction_modern_sigma : 813
+    inc_14c_sigma : 923
+    inc_14c_sd : 29
+    inc_fraction_modern : 695
+    inc_fraction_modern_sigma : 588
     inc_fraction_modern_sd : 2
  - - - - - - - - - - - - - - - - - - - -

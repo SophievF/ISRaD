@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-08")
+# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-21")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -60,6 +60,8 @@ lyr_data <- lyr_data_all %>%
   #filter(is.na(lyr_all_org_neg)) %>% 
   #remove Huang_1999: peat study not flagged
   filter(entry_name != "Huang_1999") %>% 
+  #remove Huang_1996: data not clear
+  filter(entry_name != "Huang_1996") %>% 
   #remove Bol_1996: peat study not flagged
   filter(entry_name != "Bol_1996") %>% 
   #filter CORG < 20
@@ -72,6 +74,38 @@ lyr_data <- lyr_data_all %>%
   # ungroup() %>% 
   #calculate layer mid-depth
   mutate(depth = ((lyr_bot - lyr_top)/2) + lyr_top)
+
+lyr_data %>% 
+  count(id)
+
+#Check for data that has same depth value for same id
+lyr_data %>% 
+  dplyr::select(entry_name, id, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>% 
+  filter(id == "Telles_2003_ZF2_ZF2_Plateau")
+
+# lyr_data %>% 
+#   dplyr::filter(entry_name != "Crow_2015" ,
+#                 entry_name != "Czimczik_2010",
+#                 entry_name != "Sierra_2013",
+#                 entry_name != "Vaughn_2018") %>%
+#   distinct(id, depth, CORG, lyr_14c, .keep_all = TRUE) %>%
+#   dplyr::filter(is.na(lyr_hzn)|lyr_hzn != "Ajj_Ojj",
+#                 is.na(lyr_hzn)|lyr_hzn != "O") %>%
+#   dplyr::select(entry_name, id, lyr_name, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>% 
+#   group_by(id, depth) %>% 
+#   filter(n() > 1) %>% view()
+
+lyr_data <- lyr_data %>% 
+  #remove entries that have duplicates/composite and not enough depth
+  dplyr::filter(entry_name != "Crow_2015" ,
+                entry_name != "Czimczik_2010",
+                entry_name != "Sierra_2013",
+                entry_name != "Vaughn_2018") %>% 
+  #Remove duplicates
+  distinct(id, depth, CORG, lyr_14c, .keep_all = TRUE) %>%
+  #Remove crytoturbated pockets in Gentsch_2018 and organic horizon
+  dplyr::filter(is.na(lyr_hzn)|lyr_hzn != "Ajj_Ojj",
+                is.na(lyr_hzn)|lyr_hzn != "O") 
 
 lyr_data %>% 
   count(entry_name)
@@ -100,13 +134,27 @@ lyr_data_fill <- lyr_data %>%
                                    pro_MAT, pro_BIO1_C_WC2.1),
          pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
                                       pro_0.5_USDA_soilorder, 
-                                      pro_usda_soil_order)) 
+                                      pro_usda_soil_order)) %>% 
+  # Manually assign climate zone for Czimczik_Unpublished
+  mutate(pro_KG_present_long = case_when(
+    is.na(pro_KG_present_long) ~ "Polar, tundra",
+    TRUE ~ pro_KG_present_long
+  )) %>% 
+  mutate(pro_KG_present_short = case_when(
+    is.na(pro_KG_present_short) ~ "ET",
+    TRUE ~ pro_KG_present_short
+  ))
+
 
 lyr_data_fill %>% 
   count(pro_usda_soil_order)
 
 lyr_data_fill %>% 
   filter(is.na(pro_usda_soil_order)) %>% 
+  count(entry_name)
+
+lyr_data_fill %>% 
+  filter(is.na(pro_KG_present_long)) %>% 
   count(entry_name)
 
 summary(lyr_data_fill$pro_BIO12_mmyr_WC2.1)
