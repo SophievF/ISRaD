@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-21")
+# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-24")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -64,6 +64,8 @@ lyr_data <- lyr_data_all %>%
   filter(entry_name != "Huang_1996") %>% 
   #remove Bol_1996: peat study not flagged
   filter(entry_name != "Bol_1996") %>% 
+  #remove Baisden_2002: data is also in Baisden_2007
+  filter(entry_name != "Baisden_2002") %>% 
   #filter CORG < 20
   filter(CORG <= 20 & CORG > 0) %>% 
   #depth = 200
@@ -79,9 +81,9 @@ lyr_data %>%
   count(id)
 
 #Check for data that has same depth value for same id
-lyr_data %>% 
-  dplyr::select(entry_name, id, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>% 
-  filter(id == "Telles_2003_ZF2_ZF2_Plateau")
+# lyr_data %>% 
+#   dplyr::select(entry_name, id, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>% 
+#   filter(id == "Telles_2003_ZF2_ZF2_Plateau")
 
 # lyr_data %>% 
 #   dplyr::filter(entry_name != "Crow_2015" ,
