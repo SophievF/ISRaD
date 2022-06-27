@@ -48,7 +48,7 @@ lyr_data_mpspline_14c$tmse %>%
 
 lyr_example_14c <- lyr_data_mpspline_14c %>% 
   map(~.x %>% 
-        filter(grepl("Becker-Heidmann", id)))
+        filter(grepl("Baisden_2007|Lawrence_2021", id)))
 
 ggplot() +
   geom_path(data = lyr_example_14c$est_1cm, 
@@ -56,7 +56,7 @@ ggplot() +
   theme_bw() +
   scale_y_reverse("Depth") +
   geom_point(data = lyr_mpspline %>% 
-               filter(grepl("Becker-Heidmann", id)),
+               filter(grepl("Baisden_2007|Lawrence_2021", id)),
              aes(x = lyr_14c, y = depth, color = id), shape = 17, size = 3)
 
 lyr_example_14c$tmse %>% 
@@ -73,7 +73,7 @@ lyr_data_mpspline_c$tmse %>%
 
 lyr_example_c <- lyr_data_mpspline_c %>% 
   map(~.x %>% 
-        filter(grepl("Becker-Heidmann", id)))
+        filter(grepl("Baisden_2007|Lawrence_2021", id)))
 
 ggplot() +
   geom_path(data = lyr_example_c$est_1cm, 
@@ -81,7 +81,7 @@ ggplot() +
   theme_bw() +
   scale_y_reverse("Depth") +
   geom_point(data = lyr_mpspline %>%
-               filter(grepl("Becker-Heidmann", id)),
+               filter(grepl("Baisden_2007|Lawrence_2021", id)),
              aes(x = CORG, y = depth, color = id), shape = 17, size = 3)
 
 lyr_example_c$tmse %>% 
@@ -94,14 +94,16 @@ lyr_example_14c_c <- lyr_example_14c$est_1cm %>%
               rename(CORG = SPLINED_VALUE)) %>% 
   tibble()
 
-ggplot() +
-  geom_path(data = lyr_example_14c_c,
-            aes(x = CORG, y = lyr_14c, color = id)) +
-  theme_classic() +
-  scale_x_continuous(trans = "log10") +
-  geom_point(data = lyr_mpspline %>%
-               filter(grepl("Becker-Heidmann", id)),
-             aes(x = CORG, y = lyr_14c, color = id), shape = 17, size = 3)
+plotly::ggplotly(
+  ggplot() +
+    geom_path(data = lyr_example_14c_c,
+              aes(x = CORG, y = lyr_14c, color = id)) +
+    theme_classic() +
+    scale_x_continuous(trans = "log10") +
+    geom_point(data = lyr_mpspline %>%
+                 filter(grepl("Baisden_2007|Lawrence_2021", id)),
+               aes(x = CORG, y = lyr_14c, color = id), shape = 17, size = 3)
+)
 
 lyr_data_mpspline_14c$est_1cm %>% 
   filter(LD != 201) %>% 
@@ -190,28 +192,86 @@ mspline_14c_c %>%
 ## Cluster analysis
 #https://ncss-tech.github.io/AQP/aqp/aqp-profile-dissimilarity.html
 
+library(aqp)
 library(cluster)
 library(ape)
+library(RColorBrewer)
+library(latticeExtra)
+library(plotrix)
 
-mpspline_data <- lyr_data_mpspline$est_dcm[,c(3,4)]
+lyr_example_cluster <- lyr_mpspline %>% 
+  filter(grepl("Baisden_2007|Lawrence_2021", id)) %>% 
+  dplyr::select(id, lyr_top, lyr_bot, lyr_name, CORG, lyr_14c) %>% 
+  mutate(lyr_top = round(lyr_top, digits = 0),
+         lyr_bot = round(lyr_bot, digits = 0))
 
-d <- daisy(mpspline_data)
+summary(lyr_example_cluster)
 
-print(d)
+site_example <- lyr_mpspline %>% 
+  filter(grepl("Baisden_2007|Lawrence_2021", id)) %>% 
+  dplyr::select(id, pro_BIO12_mmyr_WC2.1) %>% 
+  group_by(id) %>% 
+  summarise(MAP = mean(pro_BIO12_mmyr_WC2.1))
+  
+# upgrade to SoilProfile Collection object
+depths(lyr_example_cluster) <- id ~ lyr_top + lyr_bot
+site(lyr_example_cluster) <- site_example
 
-d.diana <- diana(d)
+xyplot(CORG ~ lyr_14c, groups = id, data = horizons(lyr_example_cluster),
+       auto.key = list(columns = 3, points = TRUE, lines = FALSE))
 
-plot(d.diana)
+# compute betwee-profile dissimilarity, no depth weighting
+d.dis <- profile_compare(lyr_example_cluster, 
+                         vars = c("CORG", "lyr_14c"), k = 0, 
+                         max_d = 150, replace_na = TRUE, add_soil_flag = TRUE)
 
-d.phylo <- as.phylo(as.hclust(d.diana))
+# check total, between-profile dissimilarity, normalized to maximum
+d.m <- signif(as.matrix(d.dis / max(d.dis)), 2)
+print(d.m)
 
-par(mfcol=c(1,2), mar=c(4.5,4,1,1))
+# group via divisive hierarchical clustering
+d.diana <- diana(d.dis)
 
-plot(SPLINED_VALUE ~ LD, data = mpspline_data, 
-     type = "p", xlab = "Depth", ylab = "14C")
-grid()
-# text(mpspline_data$LD, mpspline_data$SPLINED_VALUE, row.names(mpspline_data), 
-#     font = 2)
+d.diana$order
+d.diana$height
+d.diana$dc
+d.diana$diss
+d.diana$order.lab
+d.diana$merge
 
-plot(d.phylo, font = 2, label.offset = 0.5, adj = 0.5, direction = "down", 
-     srt = 90, y.lim = c(-1, 15))
+# convert classes, for better plotting
+d.hclust <- as.hclust(d.diana, method = "ward.D2")
+
+d.phylo <- as.phylo(d.hclust)
+
+plot(d.hclust)
+
+plot(d.phylo, direction = "down", adj  = 0.1, srt = 0, label.offset = 0.5,
+     font = 1, y.lim = c(-150, 25))
+
+# plot: 2 figures side-by-side
+# layout(matrix(c(1,2), nrow = 1), widths = c(0.6, 0.4))
+# par(mar = c(1,1,1,1))
+
+# profiles
+# plotSPC(lyr_example_cluster, name = "lyr_name", axis.line.offset = -1)
+
+# annotate shallow-mod.deep break
+# abline(h = 120, col = 'red', lty = 2)
+
+# add dissimilarity matrix
+# addtable2plot(0.8, 70, format(d.m, digits = 2), display.rownames = TRUE, 
+#               xjust = 0, yjust = 0, cex = 0.75, title = 'Total Dissimilarity')
+
+# plot dendrogram in next panel
+# plot(d.phylo, direction = 'down', adj  = 0.5, srt = 0, 
+#      label.offset = 0.5, font = 1, y.lim = c(-5, 25), cex = 0.7)
+
+
+# return dissimilarity matrices at each depth slice
+d.dis.all <- profile_compare(lyr_example_cluster, vars = c("lyr_14c", "CORG"),  
+                             k = 0, max_d = 200, replace_na = TRUE, 
+                             add_soil_flag = TRUE, return_depth_distances = TRUE)
+
+# check between-profile dissimilarity, at slice 1
+print(as.matrix(d.dis.all[[1]]))

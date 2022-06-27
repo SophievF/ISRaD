@@ -11,7 +11,7 @@ source("./Code/GaussianProcess_functions_v2.R") # Update code.
 library(ISRaD)
 library(tidyverse)
 
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-21"))
+lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-24"))
 
 #Filter ISRaD data
 lyr_data_gpr <- lyr_data %>% 
@@ -19,12 +19,29 @@ lyr_data_gpr <- lyr_data %>%
   mutate(error = 0.1) %>%
   group_by(id) %>%
   mutate(scale_value = scale(lyr_14c)) %>% 
-  mutate(norm_value = (lyr_14c-min(lyr_14c))/(max(lyr_14c)-min(lyr_14c))) %>%
+  mutate(norm_value = (lyr_14c-min(lyr_14c))/(max(lyr_14c)-min(lyr_14c)),
+         z_value = (lyr_14c - mean(lyr_14c)/sd(lyr_14c))) %>%
   filter(n() > 2) %>%
+  arrange(depth, .by_group = TRUE) %>% 
   ungroup() 
 
 lyr_data_gpr %>% 
   count(id)
+
+lyr_data_gpr %>% 
+  ggplot((aes(x = lyr_14c, y = scale_value))) +
+  geom_point() +
+  theme_classic()
+
+lyr_data_gpr %>% 
+  ggplot((aes(x = lyr_14c, y = norm_value))) +
+  geom_point() +
+  theme_classic()
+
+lyr_data_gpr %>% 
+  ggplot((aes(x = lyr_14c, y = z_value))) +
+  geom_point() +
+  theme_classic()
 
 #Visual exploration of the ISRaD data
 alpha = 0.2
@@ -54,7 +71,7 @@ data_alox %>%
 #to identify the profile ('id'), one column containing the depth ('depth'), one 
 #containing the 14C data ('value') and one containing the measurement error ('error', can be empty). 
 
-nsamples <- 100
+nsamples <- 1000
 
 #ncores is the number of cpus you have on your computer. If you put a value 
 #larger than the true number of cpus you have in your computer, it will be 
@@ -62,10 +79,10 @@ nsamples <- 100
 
 # The compareGP output has slightly changed: you can select whether you keep simulations or not (This make the d object waaaayyy smaller if you don't).
 # The way to save the goodness of fit results has also changed. Instead of an nxn matrix, results are saved in the form of a long table with 3 columns, data, model and goodness of fit index. 
-d <- compare_GP(lyr_data_gpr, 
+d <- compare_GP(data_alox, 
                 idcol = "id",
-                xcol = "CORG", 
-                ycol = "lyr_14c", 
+                xcol = "depth", 
+                ycol = "scale_value", 
                 errcol = "error", 
                 nsamples = nsamples, 
                 verbose = 0, 
@@ -77,6 +94,12 @@ save(d, file = paste0("./Data/GPR_TestRun_SOC_all_", nsamples,"_",
                       format(Sys.time(), "%Y%m%d"), ".RData"))
 
 str(d)
+d$models
+d$results
+d$results$data
+d$results$model
+summary(d$results$d)
+summary(d$results$p)
 
 d$models$`Spielvogel_2008_National Park Bayrischer Wald_Leptic Cambisol`$plot()
 
@@ -141,6 +164,7 @@ head(dists)
 
 row.names(dists) <- dists$data # Add rownames to the matrix
 dists <- dists[,-1] # remove first column (data)
+head(dists)
 
 hclust.method <- "ward.D2"
 dist.method <- "euclidean"
@@ -166,7 +190,7 @@ as.dendrogram(clust) %>%
   ggraph::geom_node_text(aes(label = label, filter = leaf), angle = 90, 
                          hjust = 1, size = 3) + 
   ggraph::theme_graph() + 
-  scale_y_continuous(limits = c(-900,NA))
+  scale_y_continuous(limits = c(-10,NA))
 
 # ggsave(paste0("dendrogram",nsamples,"runs_Alox_", 
 #               format(Sys.time(), "%d%m%y"),".jpeg"), 
@@ -178,48 +202,25 @@ groups <- cutree(clust, best_numbers$Best.nc[1])
 data_grp <- data_alox %>% 
   left_join(cbind.data.frame(data.frame(id = names(groups), group = groups))) # We're joining the dataset with the group obtained from clustering
 
-ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
+ggplot(data_grp, aes(x = depth, y = scale_value)) + 
     geom_point(aes(colour = id)) + 
-    geom_line(aes(colour = id), orientation = "y") + 
+    geom_line(aes(colour = id), orientation = "x") + 
     facet_grid(cols = vars(group)) + 
-    scale_x_continuous(trans = "log10") + 
+    scale_x_continuous() + 
     theme(legend.position = "none")
-
-ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
-  geom_point(aes(colour = pro_KG_present_long)) + 
-  geom_line(aes(group = id, colour = pro_KG_present_long), orientation = "y") + 
-  facet_grid(cols = vars(group)) + 
-  scale_x_continuous(trans = "log10")
-
-ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
-  geom_point(aes(colour = factor(group))) + 
-  geom_line(aes(group = id, colour = factor(group)), orientation = "y") + 
-  facet_grid(cols = vars(pro_KG_present_long)) + 
-  scale_x_continuous(trans = "log10")
-
-ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
-  geom_point(aes(colour = factor(group))) + 
-  geom_line(aes(group = id, colour = factor(group)), orientation = "y") + 
-  facet_grid(cols = vars(pro_usda_soil_order)) + 
-  scale_x_continuous(trans = "log10")
-
-data_grp %>% 
-  dplyr::select(id, CORG,lyr_14c, group,
-                lyr_al_ox, pro_usda_soil_order, pro_BIO12_mmyr_WC2.1) %>% 
-  view()
 
 # ggsave(paste0("data_groups",nsamples,"runs_Alox_", 
 #               format(Sys.time(), "%d%m%y"),".jpeg"), 
 #        width = 12, height = 9)
 
-ggplot(data_grp, aes(x = CORG, y = lyr_14c)) + 
+ggplot(data_grp, aes(x = depth, y = lyr_14c)) + 
   geom_point(aes(colour = as.factor(group))) + 
   geom_line(aes(colour = as.factor(group), group = as.factor(id)),
-            orientation = "y") +
-  scale_x_continuous(trans = "log10") + 
+            orientation = "x") +
+  scale_x_continuous() + 
   theme_classic() + 
-  scale_colour_manual(breaks = as.factor(1:3), 
-                      values = colorspace::rainbow_hcl(3, c = 90, l = 50)[c(3,2,1,4,5,6,7)]) 
+  scale_colour_manual(breaks = as.factor(1:5), 
+                      values = colorspace::rainbow_hcl(5, c = 90, l = 50)[c(3,2,1,4,5,6,7)]) 
 
 # ggsave(paste0("data_groups_v2",nsamples,"runs_Alox_", 
 #               format(Sys.time(), "%d%m%y"),".jpeg"), 
