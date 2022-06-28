@@ -81,55 +81,51 @@ lyr_data %>%
   count(id)
 
 #Check for data that has same depth value for same id
-# lyr_data %>% 
-#   dplyr::select(entry_name, id, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>% 
-#   filter(id == "Telles_2003_ZF2_ZF2_Plateau")
+lyr_data %>%
+  dplyr::select(entry_name, id, lyr_name, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>%
+  group_by(id, depth) %>%
+  filter(n() > 1) %>% view()
 
-# lyr_data %>% 
-#   dplyr::filter(entry_name != "Crow_2015" ,
-#                 entry_name != "Czimczik_2010",
-#                 entry_name != "Sierra_2013",
-#                 entry_name != "Vaughn_2018") %>%
-#   distinct(id, depth, CORG, lyr_14c, .keep_all = TRUE) %>%
-#   dplyr::filter(is.na(lyr_hzn)|lyr_hzn != "Ajj_Ojj",
-#                 is.na(lyr_hzn)|lyr_hzn != "O") %>%
-#   dplyr::select(entry_name, id, lyr_name, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>% 
-#   group_by(id, depth) %>% 
-#   filter(n() > 1) %>% view()
-
-lyr_data <- lyr_data %>% 
+lyr_data_clean <- lyr_data %>% 
   #remove entries that have duplicates/composite and not enough depth
-  dplyr::filter(entry_name != "Crow_2015" ,
-                entry_name != "Czimczik_2010",
-                entry_name != "Sierra_2013",
-                entry_name != "Vaughn_2018") %>% 
+  dplyr::filter(entry_name != "Czimczik_2010") %>% 
   #Remove duplicates
   distinct(id, depth, CORG, lyr_14c, .keep_all = TRUE) %>%
   #Remove crytoturbated pockets in Gentsch_2018 and organic horizon
   dplyr::filter(is.na(lyr_hzn)|lyr_hzn != "Ajj_Ojj",
-                is.na(lyr_hzn)|lyr_hzn != "O") 
+                is.na(lyr_hzn)|lyr_hzn != "O") %>% 
+  #Remove incubation data from Vaughn_2018
+  dplyr::filter(id != "Vaughn_2018_Barrow_C1C",
+                  id != "Vaughn_2018_Barrow_TC",
+                  id != "Vaughn_2018_Barrow_Z210C",
+                  id != "Vaughn_2018_Barrow_B3C")
 
-lyr_data %>% 
+lyr_data_clean %>%
+  dplyr::select(entry_name, id, lyr_name, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>%
+  group_by(id, depth) %>%
+  filter(n() > 1) %>% view()
+
+lyr_data_clean %>% 
   count(entry_name)
 
-lyr_data %>% 
+lyr_data_clean %>% 
   ggplot(aes(x = depth, y = lyr_14c, group = entry_name)) + 
   geom_point(size = 3, shape = 21) +
   theme_bw(base_size = 16)
 
 # Gap-fill missing global data with reported local data (or vice-versa)
-lyr_data %>% 
+lyr_data_clean %>% 
   count(pro_usda_soil_order)
-lyr_data %>% 
+lyr_data_clean %>% 
   count(pro_0.5_USDA_soilorder)
-lyr_data %>% 
+lyr_data_clean %>% 
   count(pro_KG_present_long)
-lyr_data %>% 
+lyr_data_clean %>% 
   count(pro_KG_present_short)
 
-summary(lyr_data$pro_BIO12_mmyr_WC2.1)
+summary(lyr_data_clean$pro_BIO12_mmyr_WC2.1)
 
-lyr_data_fill <- lyr_data %>% 
+lyr_data_fill <- lyr_data_clean %>% 
   mutate(pro_BIO12_mmyr_WC2.1 = ifelse(is.na(pro_BIO12_mmyr_WC2.1), 
                                        pro_MAP, pro_BIO12_mmyr_WC2.1),
          pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
@@ -146,7 +142,6 @@ lyr_data_fill <- lyr_data %>%
     is.na(pro_KG_present_short) ~ "ET",
     TRUE ~ pro_KG_present_short
   ))
-
 
 lyr_data_fill %>% 
   count(pro_usda_soil_order)

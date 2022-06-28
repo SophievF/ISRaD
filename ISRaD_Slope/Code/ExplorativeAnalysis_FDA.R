@@ -10,14 +10,9 @@ library(tidyverse)
 library(fda)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-21"))
+lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-28"))
 
 lyr_fda <- lyr_data %>% 
-  #remove studies that have multiple depth layers for now
-  filter(entry_name != "Drake_2019" ,
-         entry_name != "Richer_1999",
-         entry_name != "Giardina_2014") %>% 
-  #overlapping depth layers; not enough depth layers
   filter(lyr_bot <= 200) %>% 
   group_by(id) %>%
   #Filter for studies that have more than 2 depth layers

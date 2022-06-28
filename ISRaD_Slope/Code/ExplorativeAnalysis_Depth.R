@@ -11,7 +11,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-24"))
+lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-28"))
 
 lyr_data %>% 
   count(entry_name)
@@ -19,11 +19,6 @@ lyr_data %>%
 names(lyr_data)
 
 lyr_mpspline <- lyr_data %>% 
-  #remove studies that have multiple depth layers for now
-  filter(entry_name != "Drake_2019" ,
-         entry_name != "Richer_1999",
-         entry_name != "Giardina_2014") %>% 
-  #overlapping depth layers; not enough depth layers
   filter(lyr_bot <= 200) %>% 
   group_by(id) %>%
   #Filter for studies that have more than 2 depth layers
@@ -155,7 +150,7 @@ mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>%
   filter(LD != 201) %>% 
   tibble()
 
-plotly::ggplotly()
+# plotly::ggplotly()
 
 ggplot() +
   geom_path(data = mspline_14c_c,
@@ -179,7 +174,7 @@ lyr_mpspline %>%
 
 mspline_14c_c %>%
   extract(col = id, into = c("entry_name"), regex = "(.*?_.*?)_",
-          remove = FALSE) %>% 
+          remove = FALSE) %>%
   ggplot() +
   geom_path(aes(x = CORG, y = lyr_14c, color = id)) +
   theme_classic() +
