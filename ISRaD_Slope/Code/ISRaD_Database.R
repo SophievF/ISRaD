@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-24")
+# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-28")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -66,8 +66,12 @@ lyr_data <- lyr_data_all %>%
   filter(entry_name != "Bol_1996") %>% 
   #remove Baisden_2002: data is also in Baisden_2007
   filter(entry_name != "Baisden_2002") %>% 
-  #filter CORG < 20
-  filter(CORG <= 20 & CORG > 0) %>% 
+  #remove Kogel-Knabner_2008: same data as in Eusterhues_2003
+  filter(entry_name != "Kogel-Knabner_2008") %>% 
+  #remove profile: Chalk River Laboratories (CRL):46,-77.4_563: wetland
+  filter(pro_name != "Chalk River Laboratories (CRL):46,-77.4_563") %>% 
+  #filter CORG >0
+  filter(CORG > 0) %>% 
   #depth = 200
   #filter(lyr_bot <= 200) %>% 
   # group_by(id) %>%
@@ -96,14 +100,19 @@ lyr_data_clean <- lyr_data %>%
                 is.na(lyr_hzn)|lyr_hzn != "O") %>% 
   #Remove incubation data from Vaughn_2018
   dplyr::filter(id != "Vaughn_2018_Barrow_C1C",
-                  id != "Vaughn_2018_Barrow_TC",
-                  id != "Vaughn_2018_Barrow_Z210C",
-                  id != "Vaughn_2018_Barrow_B3C")
+                id != "Vaughn_2018_Barrow_TC",
+                id != "Vaughn_2018_Barrow_Z210C",
+                id != "Vaughn_2018_Barrow_B3C",
+                id != "Vaughn_2018_Barrow_A3C",
+                id != "Vaughn_2018_Barrow_A4C",
+                id != "Vaughn_2018_Barrow_H3C",
+                id != "Vaughn_2018_Barrow_Z415C",
+                id != "Vaughn_2018_Barrow_Z53C")
 
 lyr_data_clean %>%
   dplyr::select(entry_name, id, lyr_name, depth, lyr_top, lyr_bot, lyr_14c, CORG) %>%
   group_by(id, depth) %>%
-  filter(n() > 1) %>% view()
+  filter(n() > 1) 
 
 lyr_data_clean %>% 
   count(entry_name)

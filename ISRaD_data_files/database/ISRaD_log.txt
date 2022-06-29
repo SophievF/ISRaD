@@ -1,6 +1,6 @@
 ISRaD Compilation Log 
  
- 2022-06-28 18:55:20 
+ 2022-06-29 17:04:29 
  - - - - - - - - - - - - - - - 
 
 
@@ -490,7 +490,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  241 compiling Massa_2021.xlsx ... passed QAQC
 
- 242 compiling Mayer_2018.xlsx ... passed QAQC
+ 242 checking Mayer_2018.xlsx ...New data - passed QAQC
 
  243 compiling McClaran_2000.xlsx ... passed QAQC
 
@@ -982,8 +982,8 @@ Summary statistics...
     lyr_ecec : 251
     lyr_bs : 374
     lyr_c_inorg : 1578
-    lyr_c_org : 3972
-    lyr_c_tot : 9284
+    lyr_c_org : 3999
+    lyr_c_tot : 9260
     lyr_soc : 1948
     lyr_soc_sigma : 297
     lyr_n_tot : 7694

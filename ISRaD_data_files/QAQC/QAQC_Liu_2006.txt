@@ -118,7 +118,7 @@ Summary statistics...
     lyr_top : 31
     lyr_bot : 31
     lyr_bd_samp : 30
-    lyr_c_tot : 31
+    lyr_c_org : 31
     lyr_14c : 31
     lyr_14c_sigma : 31
  interstitial tab...0 observations
