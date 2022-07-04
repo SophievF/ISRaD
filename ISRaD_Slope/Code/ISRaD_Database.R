@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-28")
+# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-06-30")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -60,7 +60,7 @@ lyr_data <- lyr_data_all %>%
   #filter(is.na(lyr_all_org_neg)) %>% 
   #remove Huang_1999: peat study not flagged
   filter(entry_name != "Huang_1999") %>% 
-  #remove Huang_1996: data not clear
+  #remove Huang_1996: peat study not flagged
   filter(entry_name != "Huang_1996") %>% 
   #remove Bol_1996: peat study not flagged
   filter(entry_name != "Bol_1996") %>% 

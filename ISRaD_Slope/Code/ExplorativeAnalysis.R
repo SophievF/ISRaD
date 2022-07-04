@@ -8,18 +8,19 @@ library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-21"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-30"))
+
+lyr_data <- lyr_all %>% 
+  filter(lyr_bot <= 200) %>% 
+  group_by(id) %>%
+  filter(min(lyr_top) == 0) %>% 
+  #Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  arrange(depth, .by_group = TRUE) %>% 
+  ungroup()
 
 lyr_data %>% 
-  # filter(lyr_bot <= 200) %>% 
-  # group_by(id) %>%
-  # #Filter for studies that have more than 2 depth layers
-  # filter(n() > 2) %>%
-  # ungroup() %>% 
-  count(entry_name)
-
-lyr_data %>% 
-  count(id)
+  count(id) %>% view()
 
 names(lyr_data)
 
@@ -49,7 +50,7 @@ ggplot() +
                      breaks = c(-100,0,100), limits = c(-160,180)) +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), 
                      breaks = c(-50,0,50), limits = c(-55,80))
-ggsave(file = paste0("./Figure/ISRaD_14C_SOC_map_", Sys.Date(),
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_map_", Sys.Date(),
                      ".jpeg"), width = 10, height = 5)
 
 # Data exploration ##
@@ -105,22 +106,24 @@ p2 <- lyr_data %>%
   scale_fill_viridis_c(trans = "log10")
 
 ggarrange(p0, p1, common.legend = TRUE)
-ggsave(file = paste0("./Figure/ISRaD_14C_SOC_depth_hex_", format(Sys.time(), "%Y%m%d"),
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_depth_hex_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 # Colored by sampling year
 p1 <- lyr_data %>% 
   mutate(sampl_yr = cut(lyr_obs_date_y,
                         breaks = c(1899,1960,1984,1995,1999,2009,2012,2018))) %>% 
-  ggplot(aes(y = depth, x = lyr_14c,
+  ggplot(aes(x = depth, y = lyr_14c,
              fill = sampl_yr)) + 
   geom_point(aes(group = entry_name),
              size = 5, alpha = 0.8, shape = 21) +
-  theme_bw(base_size = 16) +
+  theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_y_reverse("Depth [cm]") +
-  scale_x_continuous(limits = c(-1505,305)) +
+  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) +
+  scale_y_continuous(limits = c(-1005,305)) +
   scale_fill_viridis_d()
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_yr_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 p2 <- lyr_data %>% 
   mutate(sampl_yr = cut(lyr_obs_date_y,
@@ -151,15 +154,8 @@ lyr_data %>%
                                ticks.linewidth = 2))
 
 lyr_data %>% 
-  drop_na(pro_usda_soil_order) %>% 
-  filter(lyr_bot <= 200) %>% 
-  group_by(id) %>%
-  #Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
-  ungroup() %>% 
   ggplot(aes(x = depth, y = lyr_14c)) +
   geom_line(aes(group = id), alpha = 0.5) +
-  # geom_point() +
   geom_smooth(method = "gam", formula = y ~ s(log(x)),
               fill = "lightblue") +
   theme_classic(base_size = 16) +
@@ -167,6 +163,19 @@ lyr_data %>%
   scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) +
   scale_y_continuous("Delta14C", expand = c(0,0), limits = c(-1000,350),
                      breaks = seq(-1000,250,250)) 
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_profile_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+lyr_data %>%  
+  ggplot(aes(y = lyr_14c, x = CORG)) +
+  geom_path(aes(group = id), alpha = 0.5) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous("Delta14C", expand = c(0,0), limits = c(-1000,350),
+                     breaks = seq(-1000,250,250))
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_profile_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 lyr_data %>% 
   ggplot(aes(y = lyr_14c, x = CORG, color = pro_BIO12_mmyr_WC2.1)) +
@@ -317,22 +326,18 @@ lyr_data %>%
   # ungroup() %>% 
   filter(pro_usda_soil_order != "Aridisols",
          pro_usda_soil_order != "Histosols") %>%
-    #reclassify soil type Schuur_2001: all Andisols
-  #   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-  #                                        entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
-  #                                        "Andisols")) %>% 
-  #   #reclassify soil type Guillet_1988: all Andisols
-  #   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-  #                                        entry_name == "Guillet_1988",
-  #                                        "Andisols")) %>% 
-  # #reclassify soil type Torn_1997: all Andisols
-  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-  #                                      entry_name == "Torn_1997",
-  #                                      "Andisols")) %>% 
-  # #reclassify soil type Kramer_2012: all Andisols
-  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-  #                                      entry_name == "Kramer_2012",
-  #                                      "Andisols")) %>% 
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>%
   ggplot(aes(x = CORG, y = lyr_14c)) +
   # geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3) +
   geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "x",
