@@ -138,10 +138,27 @@ lyr_data_fill <- lyr_data_clean %>%
   mutate(pro_BIO12_mmyr_WC2.1 = ifelse(is.na(pro_BIO12_mmyr_WC2.1), 
                                        pro_MAP, pro_BIO12_mmyr_WC2.1),
          pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
-                                   pro_MAT, pro_BIO1_C_WC2.1),
-         pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
-                                      pro_0.5_USDA_soilorder, 
+                                   pro_MAT, pro_BIO1_C_WC2.1)) %>% 
+  #Use WRB to fill USDA: https://www.isric.org/sites/default/files/major_soils_of_the_world/annexes/index.pdf
+  mutate(pro_usda_soil_order = ifelse(grepl("andosol|Andosol", pro_soil_taxon), "Andisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("ferralsol|Ferralsol|Ferralols", pro_soil_taxon), "Oxisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("podzol|Podzol", pro_soil_taxon), "Spodosols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("vertisol|Vertisol", pro_soil_taxon), "Vertisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("Kastanozem|Chernozem|Phaeozem", pro_soil_taxon), "Mollisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("luvisol|Luvisol", pro_soil_taxon), "Alfisols",
                                       pro_usda_soil_order)) %>% 
+  mutate(pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
+                                    pro_0.5_USDA_soilorder, 
+                                    pro_usda_soil_order)) %>% 
+  #Fill missing soil type based on expert knowledge
+  mutate(pro_usda_soil_order = ifelse((entry_name == "Lassey_1996" &
+                                  is.na(pro_usda_soil_order)), "Inceptisols",
+                               pro_usda_soil_order)) %>% 
   # Manually assign climate zone for Czimczik_Unpublished
   mutate(pro_KG_present_long = case_when(
     is.na(pro_KG_present_long) ~ "Polar, tundra",

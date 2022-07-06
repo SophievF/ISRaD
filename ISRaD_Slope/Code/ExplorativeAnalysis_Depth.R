@@ -11,7 +11,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-30"))
+lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-07-06"))
 
 lyr_data %>% 
   count(entry_name)
@@ -51,27 +51,6 @@ lyr_data_mpspline_14c <- lyr_mpspline %>%
 lyr_data_mpspline_14c$tmse %>% 
   filter(ERROR_TYPE == "RMSE") %>% 
   summary()
-
-lyr_example_14c <- lyr_data_mpspline_14c %>% 
-  map(~.x %>% 
-        filter(grepl("Basile_Doelsch_2005|Grant_2022|Schuur_2001Butman_2007|Chiti_2010|Neue_1980|Castanha_2012|Koarashi_2005", 
-                     id)))
-
-ggplot() +
-  geom_path(data = lyr_example_14c$est_1cm, 
-            aes(x = SPLINED_VALUE, y = UD, group = id)) +
-  theme_bw() +
-  scale_y_reverse("Depth") +
-  geom_point(data = lyr_mpspline %>% 
-               filter(grepl("Basile_Doelsch_2005|Grant_2022|Schuur_2001|Butman_2007|Chiti_2010|Neue_1980|Castanha_2012|Koarashi_2005", 
-                            id)),
-             aes(x = lyr_14c, y = depth, color = entry_name), 
-             shape = 17, size = 3)
-
-lyr_example_14c$tmse %>% 
-  filter(ERROR_TYPE == "RMSE") %>% 
-  summary()
-
 
 lyr_data_mpspline_14c$est_1cm %>% 
   filter(LD != 201) %>% 
@@ -157,8 +136,6 @@ lyr_data_mpspline_14c$est_1cm %>%
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_1_CI_", Sys.Date(),
                      ".jpeg"), width = 7, height = 6)
 
-#breaks = c(1899,1960,1984,1995,1999,2009,2012,2022)))
-
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
   dplyr::filter(LD != 201) %>% 
@@ -214,7 +191,7 @@ lyr_data_mpspline_14c$est_1cm %>%
   dplyr::filter(LD != 201) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
-                     dplyr::select(entry_name, id, pro_usda_soil_order), 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order), 
                    by = "id") %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(pro_usda_soil_order != "Aridisols") %>% 
@@ -234,15 +211,14 @@ lyr_data_mpspline_14c$est_1cm %>%
   mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
          uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
-         n = n()) %>% 
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
   ungroup() %>%
-  filter(n > 4) %>% 
+  filter(n_site > 4) %>% 
   ggplot(aes(y = UD)) +
   geom_line(aes(x = median_pseudo), color = "red", size = 0.7, orientation = "y") +
   geom_ribbon(aes(xmin = lci_median, xmax = uci_median) ,
                   color = "black", fill = "red", alpha = 0.2) +
-  geom_line(aes(x = n), color = "black", linetype = "dashed",  
-            orientation = "y") +
   facet_wrap(~pro_usda_soil_order) +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
@@ -266,6 +242,37 @@ lyr_data_mpspline_14c$est_1cm %>%
   dplyr::filter(LD != 201) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order, 
+                                   pro_country), 
+                   by = "id") %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>%
+  group_by(pro_usda_soil_order, UD) %>% 
+  mutate(n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  filter(pro_usda_soil_order == "Oxisols") %>% 
+  ungroup() %>%
+  group_by(entry_name) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  count(pro_country)
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 201) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id, .keep_all = TRUE) %>% 
                      dplyr::select(entry_name, id, pro_KG_present_long), 
                    by = "id") %>% 
   mutate(ClimateZone = case_when(
@@ -316,25 +323,6 @@ lyr_data_mpspline_c$tmse %>%
   filter(ERROR_TYPE == "RMSE") %>% 
   summary()
 
-lyr_example_c <- lyr_data_mpspline_c %>% 
-  map(~.x %>% 
-        filter(grepl("Basile_Doelsch_2005|Grant_2022|Schuur_2001|Butman_2007|Chiti_2010|Neue_1980|Castanha_2012|Koarashi_2005", 
-                     id)))
-
-ggplot() +
-  geom_path(data = lyr_example_c$est_1cm, 
-            aes(x = SPLINED_VALUE, y = UD, group = id)) +
-  theme_bw() +
-  scale_y_reverse("Depth") +
-  geom_point(data = lyr_mpspline %>%
-               filter(grepl("Basile_Doelsch_2005|Grant_2022|Schuur_2001|Butman_2007|Chiti_2010|Neue_1980|Castanha_2012|Koarashi_2005", 
-                            id)),
-             aes(x = CORG, y = depth, color = entry_name), shape = 17, size = 3)
-
-lyr_example_c$tmse %>% 
-  filter(ERROR_TYPE == "RMSE") %>% 
-  summary()
-
 lyr_data_mpspline_c$est_1cm %>% 
   filter(LD != 201) %>% 
   ggplot(aes(x = UD, y = SPLINED_VALUE)) +
@@ -346,25 +334,6 @@ lyr_data_mpspline_c$est_1cm %>%
   scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) 
 
 ## Mspline 14C and CORG
-
-lyr_example_14c_c <- lyr_example_14c$est_1cm %>% 
-  rename(lyr_14c = SPLINED_VALUE) %>% 
-  full_join(lyr_example_c$est_1cm %>% 
-              rename(CORG = SPLINED_VALUE)) %>% 
-  tibble()
-
-plotly::ggplotly(
-  ggplot() +
-    geom_path(data = lyr_example_14c_c,
-              aes(x = CORG, y = lyr_14c, color = id)) +
-    theme_classic() +
-    scale_x_continuous(trans = "log10") +
-    geom_point(data = lyr_mpspline %>%
-                 filter(grepl("Basile_Doelsch_2005|Grant_2022|Schuur_2001|Butman_2007|Chiti_2010|Neue_1980|Castanha_2012|Koarashi_2005", 
-                              id)),
-               aes(x = CORG, y = lyr_14c, color = id), shape = 17, size = 3)
-)
-
 
 mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>% 
   rename(lyr_14c = SPLINED_VALUE) %>% 
@@ -381,18 +350,20 @@ mspline_14c_c %>%
          lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
          uci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
          median_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$estimate,
-         lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
-         uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         # lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         # uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
          n = n()) %>% 
   ungroup() %>% 
   dplyr::select(-c(id, lyr_14c, CORG)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>% 
-  ggplot(aes(x = median_c, y = median_14c)) +
-  geom_path(color = "red", size = 0.7) +
-  geom_ribbon(aes(ymin = lci_14c, ymax = uci_14c), 
+  ggplot(aes(x = median_c)) +
+  geom_vline(xintercept = 0.511, linetype = "dashed", size = 0.5,
+             color = "darkgrey") +
+  geom_ribbon(aes(ymin = lci_14c, ymax = uci_14c), orientation = "x",
               fill = "#fee0d2", color = "black") +
-  geom_ribbon(aes(xmin = lci_c, xmax = uci_c),
-              fill = "#fee0d2", color = "black") +
+  # geom_ribbon(aes(xmin = lci_c, xmax = uci_c),
+  #             fill = "#fee0d2", color = "black") +
+  geom_path(aes(y = median_14c), color = "red", size = 0.7) +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.major = element_line(color = "grey", linetype = "dotted",
@@ -401,9 +372,11 @@ mspline_14c_c %>%
                                         size = 0.2),
         legend.position = c(0.2,0.1),
         legend.background = element_blank()) +
-  scale_y_continuous("d14C", limits = c(-1000,250), expand = c(0,0),
+  scale_y_continuous("d14C", limits = c(-1000,125), expand = c(0,0),
                      breaks = seq(-1000,250,250)) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") 
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_sum_1_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 plotly::ggplotly(
   mspline_14c_c %>% 
