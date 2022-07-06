@@ -112,46 +112,102 @@ lyr_data_mpspline_14c$est_1cm %>%
   group_by(UD) %>% 
   mutate(mean = mean(SPLINED_VALUE),
          median = median(SPLINED_VALUE),
-         # median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
+         median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
          sd = sd(SPLINED_VALUE),
          mad = mad(SPLINED_VALUE),
          # lci_mean = t.test(SPLINED_VALUE, conf.level = 0.95)$conf.int[1],
          # uci_mean = t.test(SPLINED_VALUE, conf.level = 0.95)$conf.int[2],
-         # lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
-         # uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
          n = n()) %>% 
   ungroup() %>% 
   ggplot(aes(y = UD)) +
-  geom_line(aes(x = median, color = "median + mad", linetype = "median + mad"), 
-            size = 0.7, orientation = "y") +
+  geom_hline(yintercept = c(70, 100, 180), linetype = "dashed", size = 0.5,
+             color = "darkgrey") +
   #Alternative: use LCI and UCI from wilcox test and pseudo-median
-  geom_ribbon(aes(xmin = median-mad, xmax = median+mad), alpha = 0.2,
-              fill = "red", color = "black") +
-  geom_line(aes(x = mean, color = "mean + sd", linetype = "mean + sd"), 
-            size = 0.7, orientation = "y") +
-  #Alternative use LCI and UCI from t test
-  geom_ribbon(aes(xmin = mean-sd, xmax = mean+sd), alpha = 0.2,
-              fill = "blue", color = "black") +
-  geom_line(aes(x = n, color = "n", linetype = "n"), 
+  geom_ribbon(aes(xmin = lci_median, xmax = uci_median), 
+              fill = "#fee0d2", color = "black") +
+  geom_line(aes(x = median_pseudo, color = "median + 95 CI", 
+                linetype = "median + 95 CI"), size = 0.7, orientation = "y") +
+  # geom_line(aes(x = mean, color = "mean + sd", linetype = "mean + sd"), 
+  #           size = 0.7, orientation = "y") +
+  # #Alternative use LCI and UCI from t test
+  # geom_ribbon(aes(xmin = mean-sd, xmax = mean+sd), alpha = 0.2,
+  #             fill = "blue", color = "black") +
+  geom_line(aes(x = n, color = "n", linetype = "n"),
             orientation = "y") +
-  theme_classic(base_size = 14) +
+  theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
                                         size = 0.2),
         legend.position = c(0.2,0.9),
         legend.background = element_blank()) +
-  scale_x_continuous("d14C", limits = c(-1000,525), expand = c(0,0),
+  scale_x_continuous("d14C", limits = c(-1000,505), expand = c(0,0),
                      position = "top", breaks = seq(-1000,500,250)) +
   scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
                   breaks = seq(0,200,50)) +
-  scale_color_manual(name = "", values = c("median + mad" = "red",
-                                           "mean + sd" = "blue",
+  scale_color_manual(name = "", values = c("median + 95 CI" = "red",
+                                           # "mean + sd" = "blue",
                                            "n" = "black")) +
-  scale_linetype_manual(name = "", values = c("median + mad" = "solid",
-                                              "mean + sd" = "solid",
-                                              "n" = "dashed"))
-ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_0.1_", Sys.Date(),
-                     ".jpeg"), width = 5, height = 5)
+  scale_linetype_manual(name = "", values = c("median + 95 CI" = "solid",
+                                              # "mean + sd" = "solid",
+                                              "n" = "solid")) 
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_1_CI_", Sys.Date(),
+                     ".jpeg"), width = 7, height = 6)
+
+#breaks = c(1899,1960,1984,1995,1999,2009,2012,2022)))
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 201) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, lyr_obs_date_y), 
+                   by = "id") %>% 
+  mutate(sample_yr = cut(lyr_obs_date_y, dig.lab = 4,
+                        breaks = c(1899,1960,1984,1999,2022))) %>% 
+  group_by(UD, sample_yr) %>% 
+  mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n()) %>% 
+  ungroup() %>% 
+  ggplot(aes(y = UD)) +
+  geom_ribbon(aes(xmin = lci_median, xmax = uci_median, color = sample_yr,
+                  fill = sample_yr), alpha = 0.7) +
+  geom_line(aes(x = median_pseudo, color = sample_yr), 
+            size = 0.7, orientation = "y") +
+  geom_line(aes(x = n, color = sample_yr), linetype = "dashed", orientation = "y") +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.position = c(0.2,0.8),
+        legend.background = element_blank()) +
+  scale_x_continuous("d14C", limits = c(-1000,375), expand = c(0,0),
+                     position = "top", breaks = seq(-1000,250,250)) +
+  scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
+                  breaks = seq(0,200,50)) +
+  scale_color_viridis_d("Sampling year") +
+  scale_fill_viridis_d("Sampling year")
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_1_sampling_y_", Sys.Date(),
+                     ".jpeg"), width = 7, height = 6)
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 201) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, site_name, id, lyr_obs_date_y), 
+                   by = "id") %>% 
+  mutate(sample_yr = cut(lyr_obs_date_y, dig.lab = 4,
+                         breaks = c(1899,1960,1984,1999,2022))) %>% 
+  filter(sample_yr == "(1899,1960]") %>% 
+  count(entry_name, site_name, lyr_obs_date_y)
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
@@ -250,11 +306,6 @@ lyr_data_mpspline_14c$est_1cm %>%
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_climate_1_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-
-# Combine global 14C data and AfSIS 14C data
-coord_clay <- tibble(cbind(coord, GlobalClay))
-
-
 ## mspline CORG
 
 lyr_data_mpspline_c <- lyr_mpspline %>% 
@@ -314,12 +365,45 @@ plotly::ggplotly(
                aes(x = CORG, y = lyr_14c, color = id), shape = 17, size = 3)
 )
 
+
 mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>% 
   rename(lyr_14c = SPLINED_VALUE) %>% 
   full_join(lyr_data_mpspline_c$est_1cm %>% 
               rename(CORG = SPLINED_VALUE)) %>% 
   filter(LD != 201) %>% 
   tibble()
+
+
+#### NOT IDEAL YET ####
+mspline_14c_c %>% 
+  group_by(UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n()) %>% 
+  ungroup() %>% 
+  dplyr::select(-c(id, lyr_14c, CORG)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>% 
+  ggplot(aes(x = median_c, y = median_14c)) +
+  geom_path(color = "red", size = 0.7) +
+  geom_ribbon(aes(ymin = lci_14c, ymax = uci_14c), 
+              fill = "#fee0d2", color = "black") +
+  geom_ribbon(aes(xmin = lci_c, xmax = uci_c),
+              fill = "#fee0d2", color = "black") +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.position = c(0.2,0.1),
+        legend.background = element_blank()) +
+  scale_y_continuous("d14C", limits = c(-1000,250), expand = c(0,0),
+                     breaks = seq(-1000,250,250)) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") 
 
 plotly::ggplotly(
   mspline_14c_c %>% 
