@@ -313,6 +313,178 @@ lyr_data_mpspline_14c$est_1cm %>%
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_climate_1_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
+## Extract dominant clay type
+library(ncdf4) # package for netcdf manipulation
+library(raster) # package for raster manipulation
+library(rgdal) # package for geospatial analysis
+
+nc_clay <- nc_open("D:/Sophie/PhD/AfSIS_GlobalData/GlobalClay/Ito-Wagai_2016_Global_Clay/clay_fraction_5m_v1r1.nc4")
+
+{
+  sink("clay_fraction_5m_v1r1_metadata.txt")
+  print(nc_clay)
+  sink()
+}
+
+lon <- ncvar_get(nc_clay, "lon")
+lat <- ncvar_get(nc_clay, "lat", verbose = F)
+t <- ncvar_get(nc_clay, "time")
+
+ndvi.array.top <- ncvar_get(nc_clay, "dominant clay mineral (topsoil)")
+dim(ndvi.array.top) 
+ndvi.array.bot <- ncvar_get(nc_clay, "dominant clay mineral (subsoil)")
+
+nc_close(nc_clay) 
+
+#values: 1 - kaolinite, 2 - smectite, 3 - vermiculite, 4 - illite/mica
+r.top <- raster(t(ndvi.array.top), xmn=min(lon), xmx=max(lon), ymn=min(lat), 
+            ymx=max(lat), crs=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0"))
+
+plot(r.top)
+
+clay_type_top <- raster::extract(r.top, cbind(lyr_mpspline$pro_long,
+                                              lyr_mpspline$pro_lat))
+
+#values: 1 - kaolinite, 2 - smectite, 3 - vermiculite, 4 - illite/mica
+r.bot <- raster(t(ndvi.array.bot), xmn=min(lon), xmx=max(lon), ymn=min(lat), 
+                ymx=max(lat), crs=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs+ towgs84=0,0,0"))
+
+plot(r.bot)
+
+clay_type_bot <- raster::extract(r.bot, cbind(lyr_mpspline$pro_long,
+                                              lyr_mpspline$pro_lat))
+
+lyr_mpspline_clay <- cbind(lyr_mpspline, clay_type_top, clay_type_bot) %>% 
+  tibble() %>% 
+  mutate(clay_type_top = case_when(
+    clay_type_top == 1 ~ "low-activity clays",
+    clay_type_top == 2 ~ "high-acivity clays",
+    clay_type_top == 3 ~ "high-acivity clays",
+    clay_type_top == 4 ~ "high-acivity clays"
+  )) %>% 
+  mutate(clay_type_bot = case_when(
+    clay_type_bot == 1 ~ "low-activity clays",
+    clay_type_bot == 2 ~ "high-acivity clays",
+    clay_type_bot == 3 ~ "high-acivity clays",
+    clay_type_bot == 4 ~ "high-acivity clays"
+  )) %>%
+  mutate(clay_type = case_when(
+    lyr_bot <= 30 ~ clay_type_top,
+    lyr_bot > 30 ~ clay_type_bot
+  )) 
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 201) %>% 
+  dplyr::left_join(lyr_mpspline_clay %>% 
+                     distinct(id, .keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, clay_type_bot, pro_KG_present_long), 
+                   by = "id") %>%
+  drop_na(clay_type_bot) %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  group_by(ClimateZone, clay_type_bot, UD) %>% 
+  mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n()) %>% 
+  ungroup() %>%
+  filter(n > 4) %>% 
+  ggplot(aes(y = UD)) +
+  geom_line(aes(x = median_pseudo, color = clay_type_bot), size = 0.7, orientation = "y") +
+  geom_ribbon(aes(xmin = lci_median, xmax = uci_median, fill = clay_type_bot, 
+                  color = clay_type_bot), alpha = 0.2) +
+  geom_line(aes(x = n, color = clay_type_bot), linetype = "dashed",  
+            orientation = "y") +
+  facet_wrap(~ClimateZone) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.position = c(0.1,0.9),
+        legend.background = element_blank(),
+        panel.spacing.x = unit(2, "lines")) +
+  scale_x_continuous("d14C", expand = c(0,0),
+                     position = "top", breaks = seq(-1000,500,250)) +
+  scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
+                  breaks = seq(0,200,50)) +
+  coord_cartesian(xlim = c(-1000,255))
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_climate_clay_type_bot_1_", 
+                     Sys.Date(), ".jpeg"), width = 11, height = 6)
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 201) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order, 
+                                   pro_KG_present_long), 
+                   by = "id") %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>%
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  mutate(clay_type = case_when(
+    pro_usda_soil_order == "Oxisols" ~ "low-activity clays",
+    pro_usda_soil_order == "Ultisols" ~ "low-activity clays",
+    TRUE ~ "high-activity clays"
+  )) %>% 
+  group_by(ClimateZone, clay_type, UD) %>% 
+  mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n()) %>% 
+  ungroup() %>%
+  filter(n > 4) %>% 
+  ggplot(aes(y = UD)) +
+  geom_line(aes(x = median_pseudo, color = clay_type), size = 0.7, orientation = "y") +
+  geom_ribbon(aes(xmin = lci_median, xmax = uci_median, fill = clay_type, 
+                  color = clay_type), alpha = 0.2) +
+  geom_line(aes(x = n, color = clay_type), linetype = "dashed",  
+            orientation = "y") +
+  facet_wrap(~ClimateZone) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.position = c(0.1,0.9),
+        legend.background = element_blank(),
+        panel.spacing.x = unit(2, "lines")) +
+  scale_x_continuous("d14C", expand = c(0,0),
+                     position = "top", breaks = seq(-1000,500,250)) +
+  scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
+                  breaks = seq(0,200,50)) +
+  coord_cartesian(xlim = c(-1000,255))
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_climate_clay_type_1_", 
+                     Sys.Date(), ".jpeg"), width = 11, height = 6)
+
+
 ## mspline CORG
 
 lyr_data_mpspline_c <- lyr_mpspline %>% 
