@@ -19,7 +19,9 @@ lyr_data %>%
 names(lyr_data)
 
 lyr_mpspline <- lyr_data %>% 
-  filter(lyr_bot <= 200) %>% 
+  filter(lyr_obs_date_y > 1959) %>% 
+  filter(lyr_bot <= 100) %>% 
+  filter(lyr_top <= 100) %>%
   group_by(id) %>%
   filter(min(lyr_top) == 0) %>% 
   #Filter for studies that have more than 2 depth layers
@@ -53,7 +55,7 @@ lyr_data_mpspline_14c$tmse %>%
   summary()
 
 lyr_data_mpspline_14c$est_1cm %>% 
-  filter(LD != 201) %>% 
+  filter(LD < 101) %>% 
   ggplot() +
   geom_line(aes(x = SPLINED_VALUE, y = UD, color = id),
             orientation = "y") +
@@ -68,26 +70,26 @@ lyr_mpspline %>%
               fill = "lightblue") +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) +
+  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,105)) +
   scale_y_continuous("Delta14C", expand = c(0,0), limits = c(-1000,350),
                      breaks = seq(-1000,250,250))
 
 lyr_data_mpspline_14c$est_1cm %>% 
-  filter(LD != 201) %>% 
+  filter(LD < 101) %>% 
   ggplot(aes(x = UD, y = SPLINED_VALUE)) +
   geom_line(aes(group = id), alpha = 0.5) +
   geom_smooth(method = "gam", formula = y ~ s(log(x)),
               fill = "lightblue") +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) +
+  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,105)) +
   scale_y_continuous("Delta14C", expand = c(0,0), limits = c(-1000,350),
                      breaks = seq(-1000,250,250))
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 lyr_data_mpspline_14c$est_1cm %>% 
-  filter(LD != 201) %>% 
+  filter(LD < 101) %>% 
   group_by(UD) %>% 
   mutate(mean = mean(SPLINED_VALUE),
          median = median(SPLINED_VALUE),
@@ -101,8 +103,8 @@ lyr_data_mpspline_14c$est_1cm %>%
          n = n()) %>% 
   ungroup() %>% 
   ggplot(aes(y = UD)) +
-  geom_hline(yintercept = c(70, 100, 180), linetype = "dashed", size = 0.5,
-             color = "darkgrey") +
+  # geom_hline(yintercept = c(70, 100, 180), linetype = "dashed", size = 0.5,
+  #            color = "darkgrey") +
   #Alternative: use LCI and UCI from wilcox test and pseudo-median
   geom_ribbon(aes(xmin = lci_median, xmax = uci_median), 
               fill = "#fee0d2", color = "black") +
@@ -125,7 +127,7 @@ lyr_data_mpspline_14c$est_1cm %>%
         legend.background = element_blank()) +
   scale_x_continuous("d14C", limits = c(-1000,505), expand = c(0,0),
                      position = "top", breaks = seq(-1000,500,250)) +
-  scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
+  scale_y_reverse("Depth [cm]", limits = c(105,0), expand = c(0,0),
                   breaks = seq(0,200,50)) +
   scale_color_manual(name = "", values = c("median + 95 CI" = "red",
                                            # "mean + sd" = "blue",
@@ -138,7 +140,7 @@ ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_1_CI_", Sys.Date(),
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
-  dplyr::filter(LD != 201) %>% 
+  dplyr::filter(LD < 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
                      dplyr::select(entry_name, id, lyr_obs_date_y), 
@@ -167,7 +169,7 @@ lyr_data_mpspline_14c$est_1cm %>%
         legend.background = element_blank()) +
   scale_x_continuous("d14C", limits = c(-1000,375), expand = c(0,0),
                      position = "top", breaks = seq(-1000,250,250)) +
-  scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
+  scale_y_reverse("Depth [cm]", limits = c(105,0), expand = c(0,0),
                   breaks = seq(0,200,50)) +
   scale_color_viridis_d("Sampling year") +
   scale_fill_viridis_d("Sampling year")
@@ -188,7 +190,7 @@ lyr_data_mpspline_14c$est_1cm %>%
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
-  dplyr::filter(LD != 201) %>% 
+  dplyr::filter(LD < 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
                      dplyr::select(entry_name, id, site_name, pro_usda_soil_order), 
@@ -231,7 +233,7 @@ lyr_data_mpspline_14c$est_1cm %>%
         panel.spacing.x = unit(2, "lines")) +
   scale_x_continuous("d14C", expand = c(0,0),
                      position = "top", breaks = seq(-1000,500,250)) +
-  scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
+  scale_y_reverse("Depth [cm]", limits = c(105,0), expand = c(0,0),
                   breaks = seq(0,200,50)) +
   coord_cartesian(xlim = c(-1000,155))
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_soilt_1_", Sys.Date(),
@@ -496,14 +498,64 @@ lyr_data_mpspline_c$tmse %>%
   summary()
 
 lyr_data_mpspline_c$est_1cm %>% 
-  filter(LD != 201) %>% 
+  # filter(LD != 201) %>% 
   ggplot(aes(x = UD, y = SPLINED_VALUE)) +
   geom_path(aes(group = id), alpha = 0.5) +
   geom_smooth(method = "gam", formula = y ~ s(log(x)),
               fill = "lightblue") +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) 
+  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,105))
+
+lyr_data_mpspline_c$est_1cm %>%
+  tibble() %>% 
+  # dplyr::filter(LD < 101) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order), 
+                   by = "id") %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>%
+  group_by(pro_usda_soil_order, UD) %>% 
+  mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  ungroup() %>%
+  filter(n_site > 4) %>% 
+  ggplot(aes(y = UD)) +
+  geom_line(aes(x = median_pseudo), color = "red", size = 0.7, orientation = "y") +
+  geom_ribbon(aes(xmin = lci_median, xmax = uci_median) ,
+              color = "black", fill = "red", alpha = 0.2) +
+  facet_wrap(~pro_usda_soil_order) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.position = c(0.2,0.9),
+        legend.background = element_blank(),
+        panel.spacing.x = unit(2, "lines")) +
+  scale_x_continuous("SOC", expand = c(0,0),
+                     position = "top") +
+  scale_y_reverse("Depth [cm]", limits = c(105,0), expand = c(0,0),
+                  breaks = seq(0,200,50))
+ggsave(file = paste0("./Figure/ISRaD_SOC_depth_mspline_sum_soilt_1_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 ## Mspline 14C and CORG
 
