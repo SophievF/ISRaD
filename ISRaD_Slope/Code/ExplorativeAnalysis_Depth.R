@@ -138,55 +138,55 @@ lyr_data_mpspline_14c$est_1cm %>%
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_1_CI_", Sys.Date(),
                      ".jpeg"), width = 7, height = 6)
 
-lyr_data_mpspline_14c$est_1cm %>% 
-  tibble() %>% 
-  dplyr::filter(LD < 101) %>% 
-  dplyr::left_join(lyr_mpspline %>% 
-                     distinct(id,.keep_all = TRUE) %>% 
-                     dplyr::select(entry_name, id, lyr_obs_date_y), 
-                   by = "id") %>% 
-  mutate(sample_yr = cut(lyr_obs_date_y, dig.lab = 4,
-                        breaks = c(1899,1960,1984,1999,2022))) %>% 
-  group_by(UD, sample_yr) %>% 
-  mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
-         lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
-         uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
-         n = n()) %>% 
-  ungroup() %>% 
-  ggplot(aes(y = UD)) +
-  geom_ribbon(aes(xmin = lci_median, xmax = uci_median, color = sample_yr,
-                  fill = sample_yr), alpha = 0.7) +
-  geom_line(aes(x = median_pseudo, color = sample_yr), 
-            size = 0.7, orientation = "y") +
-  geom_line(aes(x = n, color = sample_yr), linetype = "dashed", orientation = "y") +
-  theme_classic(base_size = 16) +
-  theme(axis.text = element_text(color = "black"),
-        panel.grid.major = element_line(color = "grey", linetype = "dotted",
-                                        size = 0.3),
-        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
-                                        size = 0.2),
-        legend.position = c(0.2,0.8),
-        legend.background = element_blank()) +
-  scale_x_continuous("d14C", limits = c(-1000,375), expand = c(0,0),
-                     position = "top", breaks = seq(-1000,250,250)) +
-  scale_y_reverse("Depth [cm]", limits = c(105,0), expand = c(0,0),
-                  breaks = seq(0,200,50)) +
-  scale_color_viridis_d("Sampling year") +
-  scale_fill_viridis_d("Sampling year")
-ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_1_sampling_y_", Sys.Date(),
-                     ".jpeg"), width = 7, height = 6)
-
-lyr_data_mpspline_14c$est_1cm %>% 
-  tibble() %>% 
-  dplyr::filter(LD != 201) %>% 
-  dplyr::left_join(lyr_mpspline %>% 
-                     distinct(id,.keep_all = TRUE) %>% 
-                     dplyr::select(entry_name, site_name, id, lyr_obs_date_y), 
-                   by = "id") %>% 
-  mutate(sample_yr = cut(lyr_obs_date_y, dig.lab = 4,
-                         breaks = c(1899,1960,1984,1999,2022))) %>% 
-  filter(sample_yr == "(1899,1960]") %>% 
-  count(entry_name, site_name, lyr_obs_date_y)
+# lyr_data_mpspline_14c$est_1cm %>% 
+#   tibble() %>% 
+#   dplyr::filter(LD < 101) %>% 
+#   dplyr::left_join(lyr_mpspline %>% 
+#                      distinct(id,.keep_all = TRUE) %>% 
+#                      dplyr::select(entry_name, id, lyr_obs_date_y), 
+#                    by = "id") %>% 
+#   mutate(sample_yr = cut(lyr_obs_date_y, dig.lab = 4,
+#                         breaks = c(1899,1960,1984,1999,2022))) %>% 
+#   group_by(UD, sample_yr) %>% 
+#   mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
+#          lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+#          uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+#          n = n()) %>% 
+#   ungroup() %>% 
+#   ggplot(aes(y = UD)) +
+#   geom_ribbon(aes(xmin = lci_median, xmax = uci_median, color = sample_yr,
+#                   fill = sample_yr), alpha = 0.7) +
+#   geom_line(aes(x = median_pseudo, color = sample_yr), 
+#             size = 0.7, orientation = "y") +
+#   geom_line(aes(x = n, color = sample_yr), linetype = "dashed", orientation = "y") +
+#   theme_classic(base_size = 16) +
+#   theme(axis.text = element_text(color = "black"),
+#         panel.grid.major = element_line(color = "grey", linetype = "dotted",
+#                                         size = 0.3),
+#         panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+#                                         size = 0.2),
+#         legend.position = c(0.2,0.8),
+#         legend.background = element_blank()) +
+#   scale_x_continuous("d14C", limits = c(-1000,375), expand = c(0,0),
+#                      position = "top", breaks = seq(-1000,250,250)) +
+#   scale_y_reverse("Depth [cm]", limits = c(105,0), expand = c(0,0),
+#                   breaks = seq(0,200,50)) +
+#   scale_color_viridis_d("Sampling year") +
+#   scale_fill_viridis_d("Sampling year")
+# ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_1_sampling_y_", Sys.Date(),
+#                      ".jpeg"), width = 7, height = 6)
+# 
+# lyr_data_mpspline_14c$est_1cm %>% 
+#   tibble() %>% 
+#   dplyr::filter(LD != 201) %>% 
+#   dplyr::left_join(lyr_mpspline %>% 
+#                      distinct(id,.keep_all = TRUE) %>% 
+#                      dplyr::select(entry_name, site_name, id, lyr_obs_date_y), 
+#                    by = "id") %>% 
+#   mutate(sample_yr = cut(lyr_obs_date_y, dig.lab = 4,
+#                          breaks = c(1899,1960,1984,1999,2022))) %>% 
+#   filter(sample_yr == "(1899,1960]") %>% 
+#   count(entry_name, site_name, lyr_obs_date_y)
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
@@ -241,7 +241,36 @@ ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_soilt_1_", Sys.Date()
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
-  dplyr::filter(LD != 201) %>% 
+  dplyr::filter(LD < 101) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order), 
+                   by = "id") %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>%
+  group_by(pro_usda_soil_order, UD) %>% 
+  mutate(n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  ungroup() %>%
+  filter(n_site > 4) %>% 
+  group_by(pro_usda_soil_order, UD) %>% 
+  summarise(n = n_distinct(id)) %>% view()
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
                      dplyr::select(entry_name, id, site_name, pro_usda_soil_order, 
@@ -263,16 +292,15 @@ lyr_data_mpspline_14c$est_1cm %>%
                                        "Andisols")) %>%
   group_by(pro_usda_soil_order, UD) %>% 
   mutate(n = n(),
-         n_site = n_distinct(site_name)) %>% 
+         n_site = n_distinct(id)) %>% 
   filter(pro_usda_soil_order == "Oxisols") %>% 
   ungroup() %>%
-  group_by(entry_name) %>% 
-  distinct(id, .keep_all = TRUE) %>% 
-  count(pro_country)
+  group_by(entry_name, pro_country) %>% 
+  summarise(n = n_distinct(id))
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
-  dplyr::filter(LD != 201) %>% 
+  dplyr::filter(LD != 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id, .keep_all = TRUE) %>% 
                      dplyr::select(entry_name, id, pro_KG_present_long), 
@@ -309,10 +337,10 @@ lyr_data_mpspline_14c$est_1cm %>%
         panel.spacing.x = unit(2, "lines")) +
   scale_x_continuous("d14C", expand = c(0,0),
                      position = "top", breaks = seq(-1000,500,250)) +
-  scale_y_reverse("Depth [cm]", limits = c(205,0), expand = c(0,0),
-                  breaks = seq(0,200,50)) +
+  scale_y_reverse("Depth [cm]", limits = c(100,0), expand = c(0,0),
+                  breaks = seq(0,100,25)) +
   coord_cartesian(xlim = c(-1000,255))
-ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_climate_1_", Sys.Date(),
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_climate_1m_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 ## Extract dominant clay type
@@ -563,9 +591,179 @@ mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>%
   rename(lyr_14c = SPLINED_VALUE) %>% 
   full_join(lyr_data_mpspline_c$est_1cm %>% 
               rename(CORG = SPLINED_VALUE)) %>% 
-  filter(LD != 201) %>% 
+  filter(LD != 101) %>% 
   tibble()
 
+
+mspline_14c_c_soilt <- mspline_14c_c %>%
+  tibble() %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order), 
+                   by = "id") %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>% 
+  group_by(pro_usda_soil_order, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  ungroup() %>%
+  filter(n_site > 4) 
+
+p1 <- mspline_14c_c_soilt %>% 
+  dplyr::select(-c(id, lyr_14c, CORG)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ggplot(aes(x = median_c, y = median_14c)) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c), color = "#fee0d2") +
+  facet_wrap(~pro_usda_soil_order) +
+  theme_classic(base_size = 16) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous("Delta14C") +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.background = element_blank())
+
+p1 +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c), color = "#fee0d2") +
+  geom_path()
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_sum_soilt_1m_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+mspline_14c_c_climate <- mspline_14c_c %>%
+  tibble() %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id, .keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_KG_present_long), 
+                   by = "id") %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  group_by(ClimateZone, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  ungroup() %>%
+  filter(n_site > 4)
+
+p1 <- mspline_14c_c_climate %>% 
+  dplyr::select(-c(id, lyr_14c, CORG)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ggplot(aes(x = median_c, y = median_14c, color = ClimateZone)) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c), alpha = 0.1) +
+  # facet_wrap(~ClimateZone) +
+  theme_classic(base_size = 16) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous("Delta14C") +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.background = element_blank(),
+        legend.position = c(0.1,0.85))
+
+p1 +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c), alpha = 0.1) +
+  geom_path()
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_sum_climate_1m_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+mspline_14c_c_climate_clay <- mspline_14c_c %>%
+  tibble() %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order, 
+                                   pro_KG_present_long), 
+                   by = "id") %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>%
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  mutate(clay_type = case_when(
+    pro_usda_soil_order == "Oxisols" ~ "low-activity clays",
+    pro_usda_soil_order == "Ultisols" ~ "low-activity clays",
+    TRUE ~ "high-activity clays"
+  )) %>% 
+  group_by(ClimateZone, clay_type, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  ungroup() %>%
+  filter(n_site > 4)
+
+p2 <- mspline_14c_c_climate_clay %>% 
+  dplyr::select(-c(id, lyr_14c, CORG)) %>%
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ggplot(aes(x = median_c, y = median_14c, color = clay_type)) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c), alpha = 0.1) +
+  facet_wrap(~ClimateZone) +
+  theme_classic(base_size = 16) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous("Delta14C") +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.background = element_blank(),
+        legend.position = c(0.9,0.1))
+
+p2 +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c), alpha = 0.1) +
+  geom_path()
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_sum_climate_clay_1m_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 #### NOT IDEAL YET ####
 mspline_14c_c %>% 
