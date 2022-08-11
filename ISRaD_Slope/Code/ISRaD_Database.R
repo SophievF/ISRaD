@@ -140,19 +140,20 @@ lyr_data_fill <- lyr_data_clean %>%
          pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
                                    pro_MAT, pro_BIO1_C_WC2.1)) %>% 
   #Use WRB to fill USDA: https://www.isric.org/sites/default/files/major_soils_of_the_world/annexes/index.pdf
-  mutate(pro_usda_soil_order = ifelse(grepl("andosol|Andosol", pro_soil_taxon), "Andisols",
-                                      pro_usda_soil_order),
-         pro_usda_soil_order = ifelse(grepl("ferralsol|Ferralsol|Ferralols", pro_soil_taxon), "Oxisols",
-                                      pro_usda_soil_order),
-         pro_usda_soil_order = ifelse(grepl("podzol|Podzol", pro_soil_taxon), "Spodosols",
-                                      pro_usda_soil_order),
-         pro_usda_soil_order = ifelse(grepl("vertisol|Vertisol", pro_soil_taxon), "Vertisols",
-                                      pro_usda_soil_order),
-         pro_usda_soil_order = ifelse(grepl("Kastanozem|Chernozem|Phaeozem", pro_soil_taxon), "Mollisols",
-                                      pro_usda_soil_order),
-         pro_usda_soil_order = ifelse(grepl("luvisol|Luvisol", pro_soil_taxon), "Alfisols",
-                                      pro_usda_soil_order)) %>% 
-  mutate(pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
+  # mutate(pro_usda_soil_order = ifelse(grepl("andosol|Andosol", pro_soil_taxon), "Andisols",
+  #                                     pro_usda_soil_order),
+  #        pro_usda_soil_order = ifelse(grepl("ferralsol|Ferralsol|Ferralols", pro_soil_taxon), "Oxisols",
+  #                                     pro_usda_soil_order),
+  #        pro_usda_soil_order = ifelse(grepl("podzol|Podzol", pro_soil_taxon), "Spodosols",
+  #                                     pro_usda_soil_order),
+  #        pro_usda_soil_order = ifelse(grepl("vertisol|Vertisol", pro_soil_taxon), "Vertisols",
+  #                                     pro_usda_soil_order),
+  #        pro_usda_soil_order = ifelse(grepl("Kastanozem|Chernozem|Phaeozem", pro_soil_taxon), "Mollisols",
+  #                                     pro_usda_soil_order),
+  #        pro_usda_soil_order = ifelse(grepl("luvisol|Luvisol", pro_soil_taxon), "Alfisols",
+  #                                     pro_usda_soil_order)) %>% 
+# Gap fill with global data product
+mutate(pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
                                     pro_0.5_USDA_soilorder, 
                                     pro_usda_soil_order)) %>% 
   #Fill missing soil type based on expert knowledge
@@ -181,6 +182,109 @@ lyr_data_fill %>%
   count(entry_name)
 
 summary(lyr_data_fill$pro_BIO12_mmyr_WC2.1)
+
+## Add WRB soil classification
+#https://data.isric.org/geonetwork/srv/ger/catalog.search#/metadata/5c301e97-9662-4f77-aa2d-48facd3c9e14
+
+WRB_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/ISRIC_WRB_map.tif"
+WRB_raster <- raster::raster(WRB_dir)
+wrb_number <- raster::extract(WRB_raster, cbind(lyr_data_fill$pro_long,
+                                                        lyr_data_fill$pro_lat))
+
+wrb_legend <- read_csv("D:/Sophie/PhD/AfSIS_GlobalData/ISRIC_WRB_map_legend.csv") %>% 
+  dplyr::select(Number, WRB_group) %>% 
+  dplyr::rename(pro_250m_wrb_soil_order = WRB_group)
+
+wrb_data <- wrb_number %>% 
+  tibble() %>% 
+  rename(Number = '.') %>% 
+  left_join(wrb_legend) %>% 
+  dplyr::select(-Number) 
+
+lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
+  tibble() %>% 
+  #Manually fix missing values
+  mutate(pro_250m_wrb_soil_order = ifelse(pro_name == "Turlock Lake_123",
+                                          "Luvisols", pro_250m_wrb_soil_order)) %>% 
+  mutate(pro_250m_wrb_soil_order = ifelse(pro_name == "Timmendorf Forest_Profile",
+                                          "Luvisols", pro_250m_wrb_soil_order)) %>% 
+  mutate(pro_250m_wrb_soil_order = ifelse(pro_name == "SC1",
+                                          "Kastanozems", pro_250m_wrb_soil_order)) %>% 
+  mutate(pro_250m_wrb_soil_order = ifelse(pro_name == "MES:46.9542,-99.2792_331",
+                                          "Chernozems", pro_250m_wrb_soil_order)) %>% 
+  mutate(pro_250m_wrb_soil_order = ifelse(pro_name == "Amapá T1-Savanna",
+                                          "Ferralsols", pro_250m_wrb_soil_order)) %>% 
+  mutate(pro_250m_wrb_soil_order = ifelse(pro_name == "Amapá T3-Forest",
+                                          "Ferralsols", pro_250m_wrb_soil_order)) %>% 
+  #gap fill exisiting data first and then use global products
+  mutate(pro_wrb_soil_order = ifelse(pro_soil_taxon_sys == "WRB" &
+                                       grepl("Nitisols|Nitisol|nitisol", pro_soil_taxon), 
+                                     "Nitisols", 
+                                     ifelse(pro_soil_taxon_sys == "WRB" &
+                                              grepl("Luvisols|Luvisol|luvisol", pro_soil_taxon), 
+                                            "Luvisols", 
+                                            ifelse(pro_soil_taxon_sys == "WRB" &
+                                                     grepl("Acrisols|Acrisol|acrisol", pro_soil_taxon), 
+                                                   "Acrisols",
+                                                   ifelse(pro_soil_taxon_sys == "WRB" &
+                                                            grepl("Cambisols|Cambisol|cambisol", pro_soil_taxon), 
+                                                          "Cambisols",
+                                                          ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                   grepl("Vertisols|Vertisol|vertisol", pro_soil_taxon), 
+                                                                 "Vertisols",
+                                                                 ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                          grepl("Leptosols|Leptosol|leptosol", pro_soil_taxon), 
+                                                                        "Leptosols",
+                                                                        ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                 grepl("Ferralsols|Ferrasols|Ferralsol|ferralsol", pro_soil_taxon), 
+                                                                               "Ferralsols",
+                                                                               ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                        grepl("Calcisols|Calcisol|calcisol", pro_soil_taxon), 
+                                                                                      "Calcisols",
+                                                                                      ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                               grepl("Kastanozems|Kastanozem|kastanozem", pro_soil_taxon), 
+                                                                                             "Kastanozems",
+                                                                                             ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                      grepl("Chernozems|Chernozem|chernozem", pro_soil_taxon), 
+                                                                                                    "Chernozems",
+                                                                                                    ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                             grepl("Andosols|Andosol|andosol", pro_soil_taxon), 
+                                                                                                           "Andosols",
+                                                                                                           ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                                    grepl("Lixisols|Lixisol|lixisol", pro_soil_taxon), 
+                                                                                                                  "Lixisols",
+                                                                                                                  ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                                           grepl("Podzols|Podzol|podzol", pro_soil_taxon), 
+                                                                                                                         "Podzols",
+                                                                                                                         ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                                                  grepl("Phaeozems|Phaeozem|phaeozem", pro_soil_taxon), 
+                                                                                                                                "Phaeozems",
+                                                                                                                                ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                                                         grepl("Fluvisols|Fluvisol|fluvisol", pro_soil_taxon), 
+                                                                                                                                       "Fluvisols",
+                                                                                                                                       ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                                                                grepl("Stagnosols|Stagnosol|stagnosol", pro_soil_taxon), 
+                                                                                                                                              "Stagnosols",
+                                                                                                                                              ifelse(pro_soil_taxon_sys == "WRB" &
+                                                                                                                                                       grepl("Alisols|Alisol|alisol", pro_soil_taxon), 
+                                                                                                                                                     "Alisols",
+                                                                                                                                                     pro_250m_wrb_soil_order))))))))))))))))))
+                                                                                                                                                     
+
+
+lyr_data_fill_wrb %>% 
+  count(pro_250m_wrb_soil_order) 
+
+lyr_data_fill_wrb %>% 
+  filter(is.na(pro_250m_wrb_soil_order)) %>% 
+  count(entry_name, pro_name)
+
+lyr_data_fill_wrb %>% 
+  count(pro_wrb_soil_order) 
+
+lyr_data_fill_wrb %>% 
+  filter(is.na(pro_wrb_soil_order)) %>% 
+  count(entry_name, pro_name)
 
 saveRDS(lyr_data_fill, paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
 

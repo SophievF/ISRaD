@@ -109,7 +109,6 @@ Summary statistics...
     pro_reps : 5
     pro_MAT : 15
     pro_MAP : 15
-    pro_soil_series : 15
     pro_soil_taxon : 15
     pro_soil_taxon_sys : 15
     pro_MAST : 15
