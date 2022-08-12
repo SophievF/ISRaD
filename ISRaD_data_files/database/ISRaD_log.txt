@@ -1,6 +1,6 @@
 ISRaD Compilation Log 
  
- 2022-08-11 18:26:41 
+ 2022-08-12 14:59:52 
  - - - - - - - - - - - - - - - 
 
 
@@ -222,7 +222,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  107 compiling Ewing_2006.xlsx ... passed QAQC
 
- 108 compiling Favilli_2008.xlsx ... passed QAQC
+ 108 checking Favilli_2008.xlsx ...New data - passed QAQC
 
  109 checking Fekete_2020.xlsx ...New data - passed QAQC
 
@@ -863,8 +863,8 @@ Summary statistics...
     pro_peatland : 1244
     pro_usda_soil_order : 2088
     pro_soil_series : 529
-    pro_soil_taxon : 1908
-    pro_soil_taxon_sys : 1663
+    pro_soil_taxon : 1910
+    pro_soil_taxon_sys : 1665
     pro_chrono_name : 27
     pro_soil_age : 208
     pro_soil_age_note : 40
@@ -983,8 +983,8 @@ Summary statistics...
     lyr_k_exch : 337
     lyr_ecec : 326
     lyr_bs : 374
-    lyr_c_inorg : 1620
-    lyr_c_org : 4161
+    lyr_c_inorg : 1578
+    lyr_c_org : 4203
     lyr_c_tot : 9493
     lyr_soc : 1948
     lyr_soc_sigma : 297

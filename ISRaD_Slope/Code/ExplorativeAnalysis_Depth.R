@@ -11,19 +11,19 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-07-06"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-08-12"))
 
-lyr_data %>% 
+lyr_all %>% 
   count(entry_name)
 
-names(lyr_data)
+names(lyr_all)
 
-lyr_mpspline <- lyr_data %>% 
+lyr_mpspline <- lyr_all %>% 
   filter(lyr_obs_date_y > 1959) %>% 
-  filter(lyr_bot <= 100) %>% 
-  filter(lyr_top <= 100) %>%
+  # filter(lyr_bot <= 100) %>% 
+  # filter(lyr_top <= 100) %>%
   group_by(id) %>%
-  filter(min(lyr_top) == 0) %>% 
+  # filter(min(lyr_top) == 0) %>% 
   #Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
@@ -193,34 +193,24 @@ lyr_data_mpspline_14c$est_1cm %>%
   dplyr::filter(LD < 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
-                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order), 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order,
+                                   pro_wrb_soil_order), 
                    by = "id") %>% 
-  drop_na(pro_usda_soil_order) %>% 
   filter(pro_usda_soil_order != "Aridisols") %>% 
-  #reclassify soil type Schuur_2001: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001",
-                                       "Andisols")) %>%
-  #reclassify soil type Guillet_1988: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Guillet_1988",
-                                       "Andisols")) %>%
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>%
   group_by(pro_usda_soil_order, UD) %>% 
-  mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
-         lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
-         uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+  mutate(#median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
+         #lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         #uci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median = median(SPLINED_VALUE),
+         mad = mad(SPLINED_VALUE),
          n = n(),
          n_site = n_distinct(site_name)) %>% 
   ungroup() %>%
   filter(n_site > 4) %>% 
   ggplot(aes(y = UD)) +
-  geom_line(aes(x = median_pseudo), color = "red", size = 0.7, orientation = "y") +
-  geom_ribbon(aes(xmin = lci_median, xmax = uci_median) ,
-                  color = "black", fill = "red", alpha = 0.2) +
+  geom_line(aes(x = median), color = "red", size = 0.7, orientation = "y") +
+  geom_ribbon(aes(xmin = median-mad, xmax = median+mad) ,
+                  color = "black", alpha = 0.2, fill = "red") +
   facet_wrap(~pro_usda_soil_order) +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
@@ -248,19 +238,7 @@ lyr_data_mpspline_14c$est_1cm %>%
                    by = "id") %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(pro_usda_soil_order != "Aridisols") %>% 
-  #reclassify soil type Schuur_2001: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001",
-                                       "Andisols")) %>%
-  #reclassify soil type Guillet_1988: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Guillet_1988",
-                                       "Andisols")) %>%
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>%
-  group_by(pro_usda_soil_order, UD) %>% 
+  #group_by(pro_usda_soil_order, UD) %>% 
   mutate(n = n(),
          n_site = n_distinct(site_name)) %>% 
   ungroup() %>%
@@ -278,18 +256,6 @@ lyr_data_mpspline_14c$est_1cm %>%
                    by = "id") %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(pro_usda_soil_order != "Aridisols") %>% 
-  #reclassify soil type Schuur_2001: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001",
-                                       "Andisols")) %>%
-  #reclassify soil type Guillet_1988: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Guillet_1988",
-                                       "Andisols")) %>%
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>%
   group_by(pro_usda_soil_order, UD) %>% 
   mutate(n = n(),
          n_site = n_distinct(id)) %>% 
@@ -297,6 +263,44 @@ lyr_data_mpspline_14c$est_1cm %>%
   ungroup() %>%
   group_by(entry_name, pro_country) %>% 
   summarise(n = n_distinct(id))
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 101) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id, .keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, pro_KG_present_long), 
+                   by = "id") %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  group_by(ClimateZone, UD) %>% 
+  mutate(n = n()) %>% 
+  count(ClimateZone) %>% 
+  filter(UD == 1|
+           UD == 101)
+
+lyr_data_mpspline_14c$est_1cm %>% 
+  tibble() %>% 
+  dplyr::filter(LD != 101) %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id, .keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, pro_KG_present_long), 
+                   by = "id") %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  filter(ClimateZone == "arid") %>% 
+  group_by(entry_name) %>% 
+  count(pro_KG_present_long)
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
@@ -526,7 +530,7 @@ lyr_data_mpspline_c$tmse %>%
   summary()
 
 lyr_data_mpspline_c$est_1cm %>% 
-  # filter(LD != 201) %>% 
+  filter(LD != 101) %>% 
   ggplot(aes(x = UD, y = SPLINED_VALUE)) +
   geom_path(aes(group = id), alpha = 0.5) +
   geom_smooth(method = "gam", formula = y ~ s(log(x)),
@@ -537,25 +541,13 @@ lyr_data_mpspline_c$est_1cm %>%
 
 lyr_data_mpspline_c$est_1cm %>%
   tibble() %>% 
-  # dplyr::filter(LD < 101) %>% 
+  dplyr::filter(LD < 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
                      dplyr::select(entry_name, id, site_name, pro_usda_soil_order), 
                    by = "id") %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(pro_usda_soil_order != "Aridisols") %>% 
-  #reclassify soil type Schuur_2001: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001",
-                                       "Andisols")) %>%
-  #reclassify soil type Guillet_1988: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Guillet_1988",
-                                       "Andisols")) %>%
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>%
   group_by(pro_usda_soil_order, UD) %>% 
   mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
@@ -591,7 +583,7 @@ mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>%
   rename(lyr_14c = SPLINED_VALUE) %>% 
   full_join(lyr_data_mpspline_c$est_1cm %>% 
               rename(CORG = SPLINED_VALUE)) %>% 
-  filter(LD != 101) %>% 
+  filter(LD < 101) %>% 
   tibble()
 
 
@@ -603,18 +595,6 @@ mspline_14c_c_soilt <- mspline_14c_c %>%
                    by = "id") %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(pro_usda_soil_order != "Aridisols") %>% 
-  #reclassify soil type Schuur_2001: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001",
-                                       "Andisols")) %>%
-  #reclassify soil type Guillet_1988: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Guillet_1988",
-                                       "Andisols")) %>%
-  #reclassify soil type Torn_1997: all Andisols
-  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Torn_1997",
-                                       "Andisols")) %>% 
   group_by(pro_usda_soil_order, UD) %>% 
   mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],

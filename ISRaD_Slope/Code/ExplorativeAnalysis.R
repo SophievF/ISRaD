@@ -3,24 +3,29 @@
 # Sophie von Fromm #
 # 01/06/2022 #
 
-library(ISRaD)
+# library(ISRaD)
 library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-06-30"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-08-12"))
+
+lyr_all %>% 
+  count(entry_name)
 
 lyr_data <- lyr_all %>% 
-  filter(lyr_bot <= 200) %>% 
+  filter(lyr_obs_date_y > 1959) %>% 
+  # filter(lyr_bot <= 100) %>% 
+  # filter(lyr_top <= 100) %>%
   group_by(id) %>%
-  filter(min(lyr_top) == 0) %>% 
+  # filter(min(lyr_top) == 0) %>% 
   #Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
   ungroup()
 
 lyr_data %>% 
-  count(id) %>% view()
+  count(entry_name) %>% view()
 
 names(lyr_data)
 
@@ -53,7 +58,39 @@ ggplot() +
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_map_", Sys.Date(),
                      ".jpeg"), width = 10, height = 5)
 
-# Data exploration ##
+lyr_data %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
+
+## Data exploration ##
+
+# Data distribution
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ggplot(aes(x = pro_usda_soil_order, fill = site_name)) +
+  geom_bar(color = "black") +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_discrete("") +
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,80))
+
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ggplot(aes(x = pro_wrb_soil_order, fill = site_name)) +
+  geom_bar(color = "black") +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_discrete("") +
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,100))
 
 #lyr_14c
 plotly::ggplotly(
@@ -64,17 +101,6 @@ plotly::ggplotly(
     theme(axis.text = element_text(color = "black")) +
     scale_x_continuous("Depth [cm]", expand = c(0.01,0.01)) +
     scale_y_continuous() 
-)
-
-#lyr_dd14c
-plotly::ggplotly(
-  lyr_data %>% 
-    ggplot(aes(x = depth, y = lyr_dd14c, group = entry_name)) + 
-    geom_point(size = 3, shape = 21) +
-    theme_bw(base_size = 16) +
-    theme(axis.text = element_text(color = "black")) +
-    scale_x_continuous("Depth [cm]", expand = c(0.01,0.01)) +
-    scale_y_continuous(limits = c(-1505,305)) 
 )
 
 # Density distribution

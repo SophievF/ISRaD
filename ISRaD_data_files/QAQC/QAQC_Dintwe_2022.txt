@@ -124,7 +124,7 @@ Summary statistics...
     lyr_sand_tot_psa : 44
     lyr_silt_tot_psa : 44
     lyr_clay_tot_psa : 44
-    lyr_c_inorg : 42
+    lyr_c_org : 42
     lyr_n_tot : 42
     lyr_c_to_n : 42
     lyr_13c : 1
