@@ -88,6 +88,31 @@ lyr_data_mpspline_14c$est_1cm %>%
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
+#Example
+ggplot() +
+  geom_line(data = lyr_data_mpspline_14c$est_1cm %>% 
+              filter(LD < 101) %>% 
+              filter(grepl("Baisden_2007_China hat|Lawrence_2021_Mattole_MT3", id)),
+            aes(y = UD, x = SPLINED_VALUE, group = id, color = id), orientation = "y",
+            size = 1.5) +
+  geom_pointrange(data = lyr_mpspline %>% 
+                    filter(lyr_bot < 101) %>% 
+                    filter(grepl("Baisden_2007_China hat|Lawrence_2021_Mattole_MT3", id)),
+                  aes(x = lyr_14c, y = depth, ymin = lyr_top, ymax = lyr_bot,
+                      color = id), size = 1) +
+  theme_classic(base_size = 50) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_y_reverse("Depth [cm]", expand = c(0,0), limits = c(105,0)) +
+  scale_x_continuous(expression(paste(Delta^14,"C [‰]")), 
+                     labels = c(-1000, "", -500, "", 0, ""),
+                     expand = c(0,0), limits = c(-1000,250),
+                     position = "top")
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_example_", Sys.Date(),
+                     ".jpeg"), width = 9, height = 10)
+
+
+
 lyr_data_mpspline_14c$est_1cm %>% 
   filter(LD < 101) %>% 
   group_by(UD) %>% 
@@ -610,12 +635,13 @@ mspline_14c_c_soilt <- mspline_14c_c %>%
 p1 <- mspline_14c_c_soilt %>% 
   dplyr::select(-c(id, lyr_14c, CORG)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>%
+  arrange(UD) %>% 
   ggplot(aes(x = median_c, y = median_14c)) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c), color = "#fee0d2") +
   facet_wrap(~pro_usda_soil_order) +
   theme_classic(base_size = 16) +
-  scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_y_continuous("Delta14C") +
+  scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.major = element_line(color = "grey", linetype = "dotted",
                                         size = 0.3),
@@ -627,7 +653,12 @@ p1 +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c), color = "#fee0d2") +
   geom_path()
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_sum_soilt_1m_", Sys.Date(),
-                     ".jpeg"), width = 11, height = 6)
+                     ".jpeg"), width = 23, height = 15)
+
+mspline_14c_c_soilt %>% 
+  group_by(pro_usda_soil_order, UD) %>% 
+  summarise(n = n_distinct(id)) %>% 
+  filter(UD == 1| UD == 97) %>% view()
 
 mspline_14c_c_climate <- mspline_14c_c %>%
   tibble() %>% 
@@ -657,6 +688,7 @@ mspline_14c_c_climate <- mspline_14c_c %>%
 p1 <- mspline_14c_c_climate %>% 
   dplyr::select(-c(id, lyr_14c, CORG)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>%
+  arrnge(UD) %>% 
   ggplot(aes(x = median_c, y = median_14c, color = ClimateZone)) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c), alpha = 0.1) +
   # facet_wrap(~ClimateZone) +

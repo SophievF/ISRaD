@@ -44,8 +44,8 @@ ggplot() +
     color = "white", fill = "lightgrey")  +
   geom_point(data = lyr_data, 
              aes(x = pro_long, y = pro_lat),
-             color = "#4D36C6", shape = 1, size = 3) +
-  theme_bw(base_size = 14) +
+             fill = "#116656", size = 4, shape = 21, color = "white") +
+  theme_bw(base_size = 16) +
   theme(rect = element_blank(),
         panel.grid = element_blank(),
         axis.ticks = element_line(color = "black"),
@@ -56,7 +56,7 @@ ggplot() +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), 
                      breaks = c(-50,0,50), limits = c(-55,80))
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_map_", Sys.Date(),
-                     ".jpeg"), width = 10, height = 5)
+                     ".jpeg"), width = 7, height = 4)
 
 lyr_data %>% 
   summarise(n_studies = n_distinct(entry_name),
