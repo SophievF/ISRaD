@@ -86,6 +86,13 @@ p_usda +
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_sum_soilt_1m_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
+usda_soil %>% 
+  filter(n_site > 4) %>%
+  group_by(pro_usda_soil_order) %>% 
+  count(UD) %>% 
+  dplyr::filter(UD == 1| UD == 60| UD == 90 | UD == 97| UD == 99) %>% 
+  view()
+
 
 ## WRB soil type
 wrb_soil <- mspline_14c_c %>%
@@ -130,7 +137,8 @@ ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_wrb_all_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 wrb_soil %>% 
+  filter(n_site > 4) %>% 
   group_by(pro_wrb_soil_order, UD) %>% 
   summarise(n = n_distinct(id)) %>% 
-  filter(UD == 1| UD == 97) %>% view()
+  filter(UD == 1| UD == 80| UD == 97) %>% view()
 
