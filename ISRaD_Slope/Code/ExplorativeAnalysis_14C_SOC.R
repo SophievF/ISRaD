@@ -20,7 +20,14 @@ lyr_mpspline <- lyr_all %>%
   #Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  ))
 
 ### Apply mspline function
 
@@ -43,6 +50,76 @@ mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>%
   tibble()
 
 ### Controls on relationship between SOC and 14C
+
+## Climate Zones
+climate_soil <- mspline_14c_c %>%
+  tibble() %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, ClimateZone), 
+                   by = "id") %>% 
+  group_by(ClimateZone, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  ungroup()
+
+p_climate <- climate_soil %>%
+  filter(n_site > 4) %>% 
+  dplyr::select(-c(id, lyr_14c, CORG)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  arrange(UD) %>% 
+  ggplot(aes(x = median_c, y = median_14c, color = ClimateZone)) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, color = ClimateZone),
+                alpha = 0.3) +
+  theme_classic(base_size = 16) +
+  scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.background = element_blank(),
+        legend.position = c(0.1,0.8))
+
+p_climate +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = ClimateZone),
+                 alpha = 0.4) +
+  geom_path()
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_climate_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+# 14C and depth by climate zone
+climate_soil %>%
+  filter(n_site > 4) %>% 
+  dplyr::select(-c(id, lyr_14c, CORG)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  arrange(UD) %>% 
+  ggplot(aes(x = median_14c, y = UD, color = ClimateZone)) +
+  geom_path() +
+  geom_ribbon(aes(xmin = lci_14c, xmax = uci_14c, fill = ClimateZone),
+              alpha = 0.3) +
+  geom_path(aes(x = n), linetype = "dashed") +
+  theme_classic(base_size = 16) +
+  scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0), 
+                     limits = c(100,0)) +
+  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), position = "top",
+                     expand = c(0,0), limits = c(-550,250)) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.background = element_blank(),
+        legend.position = c(0.2,0.8))
+ggsave(file = paste0("./Figure/ISRaD_14C_mspline_depth_climate_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 ## USDA soil type
 usda_soil <- mspline_14c_c %>%

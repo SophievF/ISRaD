@@ -25,6 +25,7 @@ lyr_mpspline <- lyr_all %>%
 
 lyr_sf <- lyr_mpspline %>% 
   dplyr::select(id, entry_name, site_name, pro_long, pro_lat) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
   sf::st_as_sf(coords = c("pro_long", "pro_lat"), crs = 4326)
 
 Global14C_raster <- raster::brick("D:/Sophie/PhD/AfSIS_GlobalData/ZhengGlobal14C/global_delta_14C.nc")
@@ -91,17 +92,11 @@ Global14C <- raster::extract(Global14C_raster, lyr_sf,
 summary(Global14C)
 
 # Combine both datasets
-lyr_14c_global <- cbind(lyr_mpspline, Global14C) %>% 
+lyr_14c_global <- cbind(lyr_mpspline %>% 
+                          distinct(id, .keep_all = TRUE), Global14C) %>% 
   tibble() %>% 
   dplyr::select(id, entry_name, site_name, pro_name, pro_long, pro_lat, c(X0:X99),
-                pro_usda_soil_order, pro_KG_present_long) %>% 
-  mutate(ClimateZone = case_when(
-    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
-    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
-    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Arid") ~ "arid",
-  )) %>% 
+                pro_usda_soil_order, ClimateZone) %>% 
   pivot_longer(cols = c(X0:X99), names_to = "depth_X", values_to = "lyr_14c") %>%
   separate(depth_X, into = c("X", "depth"),
            sep = "(?<=[X])(?=[0-9])") %>% 
@@ -126,7 +121,7 @@ lyr_14c_global %>%
   scale_color_viridis_d(option = "magma")
 
 global_14c_climate <- lyr_14c_global %>% 
-  drop_na(lyr_14c) %>% 
+  drop_na(lyr_14c) %>%
   group_by(ClimateZone, depth) %>% 
   mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
@@ -136,17 +131,26 @@ global_14c_climate <- lyr_14c_global %>%
   ungroup()
 
 global_14c_climate %>%  
+  filter(n_site > 4) %>% 
   dplyr::select(-c(id, lyr_14c)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>%
   arrange(depth) %>% 
-  ggplot(aes(y = depth, color = ClimateZone)) +
-  geom_line(aes(x = median_14c, color = ClimateZone), size = 0.7, orientation = "y") +
-  geom_ribbon(aes(xmin = lci_14c, xmax = uci_14c, fill = ClimateZone, 
-                  color = ClimateZone), alpha = 0.2) +
-  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), position = "top",
-                     expand = c(0,0), limits = c(-1000,250)) +
+  ggplot(aes(x = median_14c, y = depth, color = ClimateZone)) +
+  geom_path() +
+  geom_ribbon(aes(xmin = lci_14c, xmax = uci_14c, fill = ClimateZone),
+              alpha = 0.3) +
+  geom_path(aes(x = n), linetype = "dashed") +
+  theme_classic(base_size = 16) +
   scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0), 
-                   limits = c(100,0)) +
-  theme_bw(base_size = 16) +
+                     limits = c(100,0)) +
+  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), position = "top",
+                     expand = c(0,0), limits = c(-550,250)) +
   theme(axis.text = element_text(color = "black"),
-        legend.background = element_blank())
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.background = element_blank(),
+        legend.position = c(0.2,0.8))
+ggsave(file = paste0("./Figure/Global_14C_depth_climate_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)

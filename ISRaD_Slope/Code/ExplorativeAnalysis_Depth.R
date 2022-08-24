@@ -27,7 +27,14 @@ lyr_mpspline <- lyr_all %>%
   #Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  ))
 
 summary(lyr_mpspline$CORG)
 summary(lyr_mpspline$lyr_14c)
