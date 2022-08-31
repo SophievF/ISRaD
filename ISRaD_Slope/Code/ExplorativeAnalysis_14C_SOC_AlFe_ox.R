@@ -22,10 +22,19 @@ lyr_mpspline_ox <- lyr_all %>%
   #Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
-  ungroup() 
+  ungroup() %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  ))
 
 lyr_mpspline_ox %>% 
-  count(id)
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 lyr_mpspline_ox %>% 
   ggplot(aes(x = CORG, y = lyr_14c, color = lyr_al_ox, group = id)) + 
@@ -70,7 +79,7 @@ mspline_14c_c_alox <- lyr_alox_mpspline_14c$est_1cm %>%
   dplyr::left_join(lyr_mpspline_ox %>% 
                      distinct(id,.keep_all = TRUE) %>% 
                      dplyr::select(entry_name, id, site_name, pro_usda_soil_order,
-                                   pro_KG_present_long), 
+                                   ClimateZone), 
                    by = "id") %>% 
   tibble()
 
@@ -83,15 +92,35 @@ mspline_14c_c_alox %>%
   scale_y_continuous("Depth [cm]", trans = "reverse")
 
 mspline_14c_c_alox %>% 
+  ggplot(aes(y = UD, x = lyr_14c, color = lyr_al_ox, group = id)) + 
+  geom_path() +
+  theme_bw(base_size = 18) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  facet_wrap(~ClimateZone) +
+  scale_y_continuous("Depth", trans = "reverse") +
+  scale_x_continuous(expression(paste(Delta^14, "C")), limits = c(-1000, 250),
+                     position = "top") +
+  scale_color_viridis_c(expression(paste("Al"[ox]," [mg/g]")), trans = "log10") +
+  guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
+                               ticks.linewidth = 2))
+ggsave(file = paste0("./Figure/ISRaD_Alox_14C_depth_mspline_climate_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+mspline_14c_c_alox %>% 
   ggplot(aes(x = CORG, y = lyr_14c, color = lyr_al_ox, group = id)) + 
   geom_path() +
   theme_bw(base_size = 18) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill =  NA)) +
-  facet_wrap(~entry_name) +
+  facet_wrap(~ClimateZone) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
   scale_y_continuous(expression(paste(Delta^14, "C")), limits = c(-1000, 305)) +
   scale_color_viridis_c(expression(paste("Al"[ox]," [mg/g]")), trans = "log10") +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
+ggsave(file = paste0("./Figure/ISRaD_Alox_14C_SOC_mspline_climate_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+

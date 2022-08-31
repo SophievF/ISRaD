@@ -170,6 +170,54 @@ usda_soil %>%
   dplyr::filter(UD == 1| UD == 60| UD == 90 | UD == 97| UD == 99) %>% 
   view()
 
+## Climate and clay type
+cc_soil <- mspline_14c_c %>%
+  tibble() %>% 
+  dplyr::left_join(lyr_mpspline %>% 
+                     distinct(id,.keep_all = TRUE) %>% 
+                     dplyr::select(entry_name, id, site_name, pro_usda_soil_order,
+                                   ClimateZone), 
+                   by = "id") %>% 
+  mutate(clay_type = case_when(
+    pro_usda_soil_order == "Oxisols" ~ "low-activity clays",
+    pro_usda_soil_order == "Ultisols" ~ "low-activity clays",
+    TRUE ~ "high-activity clays"
+  )) %>% 
+  group_by(ClimateZone, clay_type, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  ungroup()  
+
+p_cc <- cc_soil %>%
+  filter(n_site > 4) %>% 
+  dplyr::select(-c(id, lyr_14c, CORG)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  arrange(UD) %>% 
+  ggplot(aes(x = median_c, y = median_14c, color = clay_type)) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c), alpha = 0.3) +
+  facet_wrap(~ClimateZone) +
+  theme_classic(base_size = 16) +
+  scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        legend.background = element_blank())
+
+p_cc +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c), alpha = 0.3) +
+  geom_path()
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_clay_climate_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
 
 ## WRB soil type
 wrb_soil <- mspline_14c_c %>%
