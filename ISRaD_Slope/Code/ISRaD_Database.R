@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-# ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-08-12")
+ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-08-12")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -147,18 +147,18 @@ lyr_data_fill <- lyr_data_clean %>%
          pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
                                    pro_MAT, pro_BIO1_C_WC2.1)) %>% 
   #Use WRB to fill USDA: https://www.isric.org/sites/default/files/major_soils_of_the_world/annexes/index.pdf
-  # mutate(pro_usda_soil_order = ifelse(grepl("andosol|Andosol", pro_soil_taxon), "Andisols",
-  #                                     pro_usda_soil_order),
-  #        pro_usda_soil_order = ifelse(grepl("ferralsol|Ferralsol|Ferralols", pro_soil_taxon), "Oxisols",
-  #                                     pro_usda_soil_order),
-  #        pro_usda_soil_order = ifelse(grepl("podzol|Podzol", pro_soil_taxon), "Spodosols",
-  #                                     pro_usda_soil_order),
-  #        pro_usda_soil_order = ifelse(grepl("vertisol|Vertisol", pro_soil_taxon), "Vertisols",
-  #                                     pro_usda_soil_order),
-  #        pro_usda_soil_order = ifelse(grepl("Kastanozem|Chernozem|Phaeozem", pro_soil_taxon), "Mollisols",
-  #                                     pro_usda_soil_order),
-  #        pro_usda_soil_order = ifelse(grepl("luvisol|Luvisol", pro_soil_taxon), "Alfisols",
-  #                                     pro_usda_soil_order)) %>%
+  mutate(pro_usda_soil_order = ifelse(grepl("andosol|Andosol", pro_soil_taxon), "Andisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("ferralsol|Ferralsol|Ferralols", pro_soil_taxon), "Oxisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("podzol|Podzol", pro_soil_taxon), "Spodosols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("vertisol|Vertisol", pro_soil_taxon), "Vertisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("Kastanozem|Chernozem|Phaeozem", pro_soil_taxon), "Mollisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("luvisol|Luvisol", pro_soil_taxon), "Alfisols",
+                                      pro_usda_soil_order)) %>%
   # Gap fill with global data product
   mutate(pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
                                       pro_0.5_USDA_soilorder, 
@@ -212,6 +212,12 @@ wrb_data <- wrb_number %>%
   left_join(wrb_legend) %>% 
   dplyr::select(-Number) 
 
+cbind(lyr_data_fill, wrb_data) %>%
+  tibble() %>% 
+  dplyr::select(entry_name, id, pro_250m_wrb_soil_order, pro_usda_soil_order,
+                pro_soil_taxon) %>% 
+  view()
+
 lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
   tibble() %>% 
   #Manually fix missing values
@@ -250,7 +256,7 @@ lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
                                                                      "Kastanozems",
                                                                      ifelse(grepl("Chernozems|Chernozem|chernozem", pro_soil_taxon), 
                                                                             "Chernozems",
-                                                                            ifelse(grepl("Andosols|Andosol|andosol", pro_soil_taxon), 
+                                                                            ifelse(grepl("Andosols|Andosol|andosol|ands", pro_soil_taxon), 
                                                                                    "Andosols",
                                                                                    ifelse(grepl("Lixisols|Lixisol|lixisol", pro_soil_taxon), 
                                                                                           "Lixisols",
@@ -264,9 +270,31 @@ lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
                                                                                                                       "Stagnosols",
                                                                                                                       ifelse(grepl("Alisols|Alisol|alisol", pro_soil_taxon), 
                                                                                                                              "Alisols",
-                                                                                                                             pro_250m_wrb_soil_order))))))))))))))))))
-
-
+                                                                                                                             pro_250m_wrb_soil_order)))))))))))))))))) %>%
+  #Manually assignment based on expert knowledge
+  mutate(pro_wrb_soil_order = case_when(
+    entry_name == "Chiti_2010" ~ "Ferralsols",
+    entry_name == "Chiti_2018b" ~ "Ferralsols",
+    entry_name == "Crow_2015" & pro_usda_soil_order == "Andisols" ~ "Andosols",
+    entry_name == "Czimczik_2005" ~ "Podzols",
+    entry_name == "Czimczik_2007" ~ "Cryosols",
+    entry_name == "Gentsch_2018" ~ "Cryosols",
+    entry_name == "Grant_2022" ~ "Andosols",
+    entry_name == "Horwath_2008" ~ "Cryosols",
+    entry_name == "Horwath_Thesis_2007" ~ "Cryosols",
+    entry_name == "Katsuno_2010" ~ "Andosols",
+    entry_name == "Khomo_2017" & pro_usda_soil_order == "Andisols" ~ "Andosols",
+    entry_name == "Kleber_2005_Lausche_Lausche_30" ~ "Andosols",
+    entry_name == "Kondo_2010" ~ "Andosols",
+    entry_name == "Kramer_2012" ~ "Andosols",
+    entry_name == "Laskar_2012" & pro_usda_soil_order == "Spodosols" ~ "Podzols",
+    entry_name == "O'Donnell_2011" ~ "Cryosols",
+    entry_name == "Rasmussen_2018" & pro_usda_soil_order == "Andisols" ~ "Andosols",
+    entry_name == "Torn_1997" & pro_usda_soil_order == "Andisols" ~ "Andosols",
+    entry_name == "Trumbore_Harden_1997" & pro_usda_soil_order == "Gelisols" ~ "Cryosols",
+    entry_name == "Trumbore_Harden_1997" & pro_usda_soil_order == "Spodosols" ~ "Podzols",
+    TRUE ~ pro_wrb_soil_order
+  )) 
 
 
 lyr_data_fill_wrb %>% 
