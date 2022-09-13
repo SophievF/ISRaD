@@ -11,7 +11,7 @@ library(ggpubr)
 library(mpspline2)
 
 # Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-08-12"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-13"))
 
 # Filter data for mspline function
 lyr_mpspline <- lyr_all %>% 
@@ -68,6 +68,11 @@ climate_soil <- mspline_14c_c %>%
          n = n(),
          n_site = n_distinct(site_name)) %>% 
   ungroup()
+
+# climate_soil %>% 
+#   dplyr::select(entry_name, site_name, ClimateZone, median_14c, n, n_site, UD) %>% 
+#   group_by(ClimateZone, UD) %>% 
+#   mutate(n_rel = n/max(n)*100)
 
 p_climate <- climate_soil %>%
   filter(n_site > 4) %>% 

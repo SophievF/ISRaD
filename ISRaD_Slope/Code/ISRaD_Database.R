@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-08-12")
+ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-09-13")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -211,12 +211,6 @@ wrb_data <- wrb_number %>%
   rename(Number = '.') %>% 
   left_join(wrb_legend) %>% 
   dplyr::select(-Number) 
-
-cbind(lyr_data_fill, wrb_data) %>%
-  tibble() %>% 
-  dplyr::select(entry_name, id, pro_250m_wrb_soil_order, pro_usda_soil_order,
-                pro_soil_taxon) %>% 
-  view()
 
 lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
   tibble() %>% 

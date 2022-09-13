@@ -11,7 +11,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-08-12"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-13"))
 
 lyr_all %>% 
   count(entry_name)
@@ -321,33 +321,19 @@ lyr_data_mpspline_14c$est_1cm %>%
   dplyr::filter(LD != 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id, .keep_all = TRUE) %>% 
-                     dplyr::select(entry_name, id, pro_KG_present_long), 
+                     dplyr::select(entry_name, id, ClimateZone), 
                    by = "id") %>% 
-  mutate(ClimateZone = case_when(
-    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
-    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
-    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Arid") ~ "arid",
-  )) %>% 
   filter(ClimateZone == "arid") %>% 
   group_by(entry_name) %>% 
-  count(pro_KG_present_long)
+  count(ClimateZone)
 
 lyr_data_mpspline_14c$est_1cm %>% 
   tibble() %>% 
   dplyr::filter(LD != 101) %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id, .keep_all = TRUE) %>% 
-                     dplyr::select(entry_name, id, pro_KG_present_long), 
+                     dplyr::select(entry_name, id, ClimateZone), 
                    by = "id") %>% 
-  mutate(ClimateZone = case_when(
-    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
-    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
-    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Arid") ~ "arid",
-  )) %>% 
   group_by(ClimateZone, UD) %>% 
   mutate(median_pseudo = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_median = wilcox.test(SPLINED_VALUE, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
@@ -372,10 +358,10 @@ lyr_data_mpspline_14c$est_1cm %>%
         legend.background = element_blank(),
         panel.spacing.x = unit(2, "lines")) +
   scale_x_continuous("d14C", expand = c(0,0),
-                     position = "top", breaks = seq(-1000,500,250)) +
+                     position = "top", breaks = seq(-600,500,200)) +
   scale_y_reverse("Depth [cm]", limits = c(100,0), expand = c(0,0),
                   breaks = seq(0,100,25)) +
-  coord_cartesian(xlim = c(-1000,255))
+  coord_cartesian(xlim = c(-550,255))
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_sum_climate_1m_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 

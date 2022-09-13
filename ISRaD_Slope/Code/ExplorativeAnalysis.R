@@ -8,7 +8,7 @@ library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-08-12"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-13"))
 
 lyr_all %>% 
   count(entry_name)
