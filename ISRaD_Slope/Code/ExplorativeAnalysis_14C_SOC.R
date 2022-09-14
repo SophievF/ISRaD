@@ -56,8 +56,10 @@ climate_soil <- mspline_14c_c %>%
   tibble() %>% 
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id,.keep_all = TRUE) %>% 
-                     dplyr::select(entry_name, id, site_name, ClimateZone), 
+                     dplyr::select(entry_name, id, site_name, ClimateZone,
+                                   pro_usda_soil_order), 
                    by = "id") %>% 
+  # filter(pro_usda_soil_order != "Andisols") %>% 
   group_by(ClimateZone, UD) %>% 
   mutate(median_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_14c = wilcox.test(lyr_14c, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
@@ -67,15 +69,11 @@ climate_soil <- mspline_14c_c %>%
          uci_c = wilcox.test(CORG, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
          n = n(),
          n_site = n_distinct(site_name)) %>% 
-  ungroup()
-
-# climate_soil %>% 
-#   dplyr::select(entry_name, site_name, ClimateZone, median_14c, n, n_site, UD) %>% 
-#   group_by(ClimateZone, UD) %>% 
-#   mutate(n_rel = n/max(n)*100)
-
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n))
+  
 p_climate <- climate_soil %>%
-  filter(n_site > 4) %>% 
+  filter(n > 4 & n_rel > 60)  %>% 
   dplyr::select(-c(id, lyr_14c, CORG)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>%
   arrange(UD) %>% 
@@ -97,7 +95,7 @@ p_climate +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = ClimateZone),
                  alpha = 0.4) +
   geom_path()
-ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_climate_", Sys.Date(),
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_mspline_climate_wo_andisols_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 # 14C and depth by climate zone

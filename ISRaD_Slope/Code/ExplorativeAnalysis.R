@@ -22,6 +22,14 @@ lyr_data <- lyr_all %>%
   #Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
+  ungroup() %>% 
+  mutate(ClimateZone = case_when(
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
   ungroup()
 
 lyr_data %>% 
@@ -63,9 +71,31 @@ lyr_data %>%
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
 
+lyr_data %>% 
+  group_by(ClimateZone, pro_usda_soil_order) %>% 
+  summarise(n_profiles = n_distinct(id))
+
 ## Data exploration ##
 
 # Data distribution
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ggplot(aes(x = pro_usda_soil_order, fill = site_name)) +
+  geom_bar(color = "black") +
+  theme_bw(base_size = 16) +
+  facet_wrap(~ClimateZone) +
+  theme(axis.text = element_text(color = "black"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none",
+        panel.grid.minor = element_blank()) +
+  scale_x_discrete("") +
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,60),
+                     breaks = seq(0,60,20))
+ggsave(file = paste0("./Figure/ISRaD_climate_soiltype_dis_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+
 lyr_data %>% 
   group_by(id) %>% 
   distinct(id, .keep_all = TRUE) %>% 
