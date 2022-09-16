@@ -97,8 +97,6 @@ pro_KG_present <- raster::extract(KG_p_raster, cbind(rdm_14c$Longitude,
                                                      rdm_14c$Latitude))
 KG_p_legend <- read_csv("D:/Sophie/PhD/AfSIS_GlobalData/Beck_KG_V1/KG_present_legend.csv")
 
-KG_p_long <- cbind(KG_p, KG_p_legend)
-
 #Merge both data sets
 rdm_14c_KG <- cbind(rdm_14c, pro_KG_present) %>% 
   tibble() %>% 

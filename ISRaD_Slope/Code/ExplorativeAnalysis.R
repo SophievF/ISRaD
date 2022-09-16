@@ -38,18 +38,68 @@ lyr_data %>%
 names(lyr_data)
 
 ## Mapping sampling locations ##
-library("rnaturalearth")
-library("rnaturalearthdata")
-library(sf)
 
 world <- map_data("world") %>% 
   filter(region != "Antarctica")
 
+library(raster)
+climate_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/Beck_KG_V1/Beck_KG_V1_present_0p083.tif"
+climate_raster <- raster::raster(climate_dir)
+
+plot(climate_raster)
+
+#reclassify climate raster
+recal <- c(1,3,1, 3,7,2, 7,16,3, 16,30,4)
+recal_mat <- matrix(recal, ncol = 3, byrow = TRUE)
+
+climate_grp <- reclassify(climate_raster, recal_mat)
+plot(climate_grp)
+
+# convert to a df for plotting in two steps,
+# First, to a SpatialPointsDataFrame
+climate_pts <- rasterToPoints(climate_grp, spatial = TRUE)
+# Then to a 'conventional' dataframe
+climate_df  <- data.frame(climate_pts) %>% 
+  rename(ClimateZone = Beck_KG_V1_present_0p083) %>% 
+  filter(ClimateZone != 0) %>% 
+  mutate(ClimateZone = case_when(
+    ClimateZone == 1 ~ "tropical",
+    ClimateZone == 2 ~ "arid",
+    ClimateZone == 3 ~ "temperate",
+    ClimateZone == 4 ~ "cold/polar"
+  ))
+
+rm(climate_pts)
+
+summary(climate_df)
+
 ggplot() +
+  geom_raster(data = climate_df, 
+              aes(x = x, y = y, fill = ClimateZone), alpha = 0.7) +
+  geom_point(data = lyr_data, 
+             aes(x = pro_long, y = pro_lat),
+             fill = "black", size = 2, shape = 21, color = "white") +
+  theme_bw(base_size = 16) +
+  theme(rect = element_blank(),
+        panel.grid = element_blank(),
+        axis.ticks = element_line(color = "black"),
+        axis.text = element_text(color = "black"),
+        axis.line = element_line(color = "black"),
+        legend.position = c(0.1,0.3)) +
+  scale_x_continuous("", labels = c("100°W", "0", "100°E"), expand = c(0,0),
+                     breaks = c(-100,0,100), limits = c(-170,180)) +
+  scale_y_continuous("",labels = c("50°S", "0", "50°N"), expand = c(0,0),
+                     breaks = c(-50,0,50), limits = c(-55,80)) +
+  scale_fill_viridis_d(direction = -1)
+ggsave(file = paste0("./Figure/ISRaD_14C_Climate_map_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+  
+  
+ggplot() +  
   geom_map(
     data = world, map = world,
     aes(long, lat, map_id = region),
-    color = "white", fill = "lightgrey")  +
+    color = "white", fill = "grey")  +
   geom_point(data = lyr_data, 
              aes(x = pro_long, y = pro_lat),
              fill = "#116656", size = 2, shape = 21, color = "white") +
@@ -90,11 +140,18 @@ lyr_data %>%
         legend.position = "none",
         panel.grid.minor = element_blank()) +
   scale_x_discrete("") +
-  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,60),
-                     breaks = seq(0,60,20))
-ggsave(file = paste0("./Figure/ISRaD_climate_soiltype_dis_", Sys.Date(),
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,65),
+                     breaks = seq(0,65,20))
+ggsave(file = paste0("./Figure/ISRaD_climate_soiltype_dis_usda_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
+#Andisols are driving patterns in temperate regions
+lyr_data %>% 
+  filter(ClimateZone == "temperate" & pro_usda_soil_order == "Andisols") %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ungroup() %>% 
+  count(entry_name)
 
 lyr_data %>% 
   group_by(id) %>% 
