@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-09-13")
+ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-09-21")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -43,11 +43,13 @@ names(lyr_data_all)
 #Prepare and filter data
 lyr_data <- lyr_data_all %>% 
   drop_na(lyr_14c) %>% 
-  mutate(CORG = case_when(
-    is.na(lyr_c_org) ~ lyr_c_tot,
-    TRUE ~ lyr_c_org
-  )) %>%
-  drop_na(CORG) %>% 
+  drop_na(lyr_c_org_filled) %>% 
+  rename(CORG = lyr_c_org_filled) %>% 
+  # mutate(CORG = case_when(
+  #   is.na(lyr_c_org) ~ lyr_c_tot,
+  #   TRUE ~ lyr_c_org
+  # )) %>%
+  # drop_na(CORG) %>% 
   filter(lyr_top >= 0 &
            lyr_bot >= 0 &
            pro_land_cover != "wetland" &
@@ -86,10 +88,10 @@ lyr_data <- lyr_data_all %>%
   mutate(depth = ((lyr_bot - lyr_top)/2) + lyr_top)
 
 lyr_data %>% 
-  count(entry_name)
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
-lyr_data %>% 
-  count(id)
 
 #Check for data that has same depth value for same id
 lyr_data %>%
@@ -122,7 +124,9 @@ lyr_data_clean %>%
   filter(n() > 1) 
 
 lyr_data_clean %>% 
-  count(entry_name)
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 lyr_data_clean %>% 
   ggplot(aes(x = depth, y = lyr_14c, group = entry_name)) + 
@@ -302,6 +306,11 @@ lyr_data_fill_wrb %>%
 lyr_data_fill_wrb %>% 
   filter(is.na(pro_wrb_soil_order)) %>% 
   count(entry_name, pro_name)
+
+lyr_data_fill_wrb %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 saveRDS(lyr_data_fill_wrb, paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
 

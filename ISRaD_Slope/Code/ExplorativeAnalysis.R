@@ -8,7 +8,7 @@ library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-13"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-21"))
 
 lyr_all %>% 
   count(entry_name)
@@ -30,7 +30,9 @@ lyr_data <- lyr_all %>%
     str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
     str_detect(pro_KG_present_long, "Arid") ~ "arid",
   )) %>% 
-  ungroup()
+  ungroup() %>% 
+  #remove for now: need to fix depth
+  filter(entry_name != "Fernandez_1993a")
 
 lyr_data %>% 
   count(entry_name) %>% view()

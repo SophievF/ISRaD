@@ -11,7 +11,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-13"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-21"))
 
 lyr_all %>% 
   count(entry_name)
@@ -34,7 +34,9 @@ lyr_mpspline <- lyr_all %>%
     str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
     str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
     str_detect(pro_KG_present_long, "Arid") ~ "arid",
-  ))
+  )) %>% 
+  #remove for now: need to fix depth
+  filter(entry_name != "Fernandez_1993a")
 
 summary(lyr_mpspline$CORG)
 summary(lyr_mpspline$lyr_14c)

@@ -1187,4 +1187,160 @@ Summary statistics...
     inc_fraction_modern : 764
     inc_fraction_modern_sigma : 657
     inc_fraction_modern_sd : 2
- - - - - - - - - - - - - - - - - - - - -
+ - - - - - - - - - - - - - - - - - - - -New data - passed QAQC
+
+ 49 checking Carbone_2008.xlsx ...New data - passed QAQC
+
+ 50 checking Carbone_2011.xlsx ...New data - passed QAQC
+
+ 51 checking Carbone_2016.xlsx ...New data - passed QAQC
+
+ 52 checking Castanha_2012.xlsx ...New data - passed QAQC
+
+ 53 checking Chabbi_2009.xlsx ...New data - passed QAQC
+
+ 54 checking Charman_1994.xlsx ...New data - passed QAQC
+
+ 55 checking Chasar_2000.xlsx ...New data - passed QAQC
+
+ 56 checking Chen_2002.xlsx ...New data - passed QAQC
+
+ 57 checking Chen_2021.xlsx ...New data - passed QAQC
+
+ 58 checking Cherkinsky_1996.xlsx ...New data - passed QAQC
+
+ 59 checking Chiti_2009_SvF.xlsx ...New data - passed QAQC
+
+ 60 checking Chiti_2010.xlsx ...New data - passed QAQC
+
+ 61 checking Chiti_2016.xlsx ...New data - passed QAQC
+
+ 62 checking Chiti_2018a.xlsx ...New data - passed QAQC
+
+ 63 checking Chiti_2018b.xlsx ...New data - passed QAQC
+
+ 64 checking Chorover_2004.xlsx ...New data - passed QAQC
+
+ 65 checking Clark_2002.xlsx ...New data - passed QAQC
+
+ 66 checking Cobb_2016.xlsx ...New data - passed QAQC
+
+ 67 checking Cole_2015.xlsx ...New data - passed QAQC
+
+ 68 checking Conen_2008.xlsx ...New data - passed QAQC
+
+ 69 checking Cook_2018.xlsx ...New data - passed QAQC
+
+ 70 checking Cooper_2017.xlsx ...New data - passed QAQC
+
+ 71 checking Crews_1995.xlsx ...New data - passed QAQC
+
+ 72 checking Crow_2015.xlsx ...New data - passed QAQC
+
+ 73 checking Cusack_2010.xlsx ...New data - passed QAQC
+
+ 74 checking Cusack_2012.xlsx ...New data - passed QAQC
+
+ 75 checking Cusack_2013.xlsx ...New data - passed QAQC
+
+ 76 checking Czimczik_2005.xlsx ...New data - passed QAQC
+
+ 77 checking Czimczik_2007.xlsx ...New data - passed QAQC
+
+ 78 checking Czimczik_2010.xlsx ...New data - passed QAQC
+
+ 79 checking Czimczik_Thesis_2003.xlsx ...New data - passed QAQC
+
+ 80 checking Czimczik_Unpublished.xlsx ...New data - passed QAQC
+
+ 81 checking Dargie_2017.xlsx ...New data - passed QAQC
+
+ 82 checking De_Feudis_2019.xlsx ...New data - passed QAQC
+
+ 83 checking de_Freitas_2001.xlsx ...New data - passed QAQC
+
+ 84 checking de_Klerk_2011.xlsx ...New data - passed QAQC
+
+ 85 checking Desjardins_1994.xlsx ...New data - passed QAQC
+
+ 86 checking Diemont_1987.xlsx ...New data - passed QAQC
+
+ 87 checking Dintwe_2022.xlsx ...New data - passed QAQC
+
+ 88 checking Doetterl_2012.xlsx ...New data - passed QAQC
+
+ 89 checking Doetterl_2015.xlsx ...New data - passed QAQC
+
+ 90 checking Doetterl_2021_Bukombe_2021_Reichenbach_2021.xlsx ...New data - passed QAQC
+
+ 91 checking Dommain_2015.xlsx ...New data - passed QAQC
+
+ 92 checking Dommain_2020.xlsx ...New data - passed QAQC
+
+ 93 compiling Dorr_1980.xlsx ... passed QAQC
+
+ 94 checking Dorr_1986.xlsx ...New data - passed QAQC
+
+ 95 checking Dorr_1989.xlsx ...New data - passed QAQC
+
+ 96 checking Drake_2019.xlsx ...New data - passed QAQC
+
+ 97 checking Dredge_2003.xlsx ...New data - passed QAQC
+
+ 98 checking Duemig_2008.xlsx ...New data - passed QAQC
+
+ 99 checking Dutta_2006.xlsx ...New data - passed QAQC
+
+ 100 compiling Elder_2018.xlsx ... passed QAQC
+
+ 101 checking Elias_1982.xlsx ...New data - passed QAQC
+
+ 102 checking Ellis_2004.xlsx ...New data - passed QAQC
+
+ 103 checking Ellis_2006.xlsx ...New data - passed QAQC
+
+ 104 checking Elzein_1995.xlsx ...New data - passed QAQC
+
+ 105 checking Estop-Aragonés_2018.xlsx ...New data - passed QAQC
+
+ 106 checking Eusterhues_2003.xlsx ...New data - passed QAQC
+
+ 107 checking Ewing_2006.xlsx ...New data - passed QAQC
+
+ 108 checking Favilli_2008.xlsx ...New data - passed QAQC
+
+ 109 checking Fekete_2020.xlsx ...New data - passed QAQC
+
+ 110 checking Fernandez_1993.xlsx ...New data - passed QAQC
+
+ 111 checking Fierer_2005.xlsx ...New data - passed QAQC
+
+ 112 checking Fillion_2014.xlsx ...New data - passed QAQC
+
+ 113 checking Finstad_2020.xlsx ...New data - passed QAQC
+
+ 114 checking Fontaine_2007.xlsx ...New data - passed QAQC
+
+ 115 checking Gandois_2014.xlsx ...New data - passed QAQC
+
+ 116 checking Gandois_2016.xlsx ...New data - passed QAQC
+
+ 117 checking Garneau_1992.xlsx ...New data - passed QAQC
+
+ 118 checking Garneau_2014.xlsx ...New data - passed QAQC
+
+ 119 checking Gaudinski_2000_Gaudinski_2001_Savage_unpubl.xlsx ...New data - passed QAQC
+
+ 120 checking Gaudinski_2001_Trumbore_unpubl.xlsx ...New data - passed QAQC
+
+ 121 checking Gentsch_2018.xlsx ...New data - failed QAQC. Check report in QAQC folder.
+
+ 122 checking Giardina_2014.xlsx ...New data - passed QAQC
+
+ 123 checking Gillson_2004.xlsx ...New data - passed QAQC
+
+ 124 compiling Godin_2014.xlsx ... passed QAQC
+
+ 125 checking Goh_1976.xlsx ...New data - passed QAQC
+
+ 126 checking Goh_1977_SvF.xlsx ...
