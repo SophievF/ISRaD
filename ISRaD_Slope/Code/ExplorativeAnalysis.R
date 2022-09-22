@@ -8,7 +8,7 @@ library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-21"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-22"))
 
 lyr_all %>% 
   count(entry_name)
@@ -20,7 +20,7 @@ lyr_data <- lyr_all %>%
   group_by(id) %>%
   # filter(min(lyr_top) == 0) %>% 
   #Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
+  # filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
   ungroup() %>% 
   mutate(ClimateZone = case_when(
@@ -115,17 +115,13 @@ ggplot() +
                      breaks = c(-100,0,100), limits = c(-160,180)) +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), 
                      breaks = c(-50,0,50), limits = c(-55,80))
-ggsave(file = paste0("./Figure/ISRaD_14C_depth_map_", Sys.Date(),
+ggsave(file = paste0("./Figure/ISRaD_14C_map_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 lyr_data %>% 
   summarise(n_studies = n_distinct(entry_name),
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
-
-lyr_data %>% 
-  group_by(ClimateZone, pro_usda_soil_order) %>% 
-  summarise(n_profiles = n_distinct(id))
 
 ## Data exploration ##
 
@@ -175,6 +171,7 @@ lyr_data %>%
   geom_bar(color = "black") +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "none",
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
@@ -282,6 +279,8 @@ ggsave(file = paste0("./Figure/ISRaD_14C_depth_profile_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 lyr_data %>%  
+  group_by(id) %>% 
+  arrange(depth) %>% 
   ggplot(aes(y = lyr_14c, x = CORG)) +
   geom_path(aes(group = id), alpha = 0.5) +
   theme_classic(base_size = 16) +
@@ -308,26 +307,11 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
   scale_color_viridis_c("MAT [C]")
 
-# Manually assign climate zone for Czimczik_Unpublished
 lyr_data %>% 
-  filter(is.na(pro_KG_present_long)) %>% 
-  count(entry_name)
-
-lyr_data_KG <- lyr_data %>% 
-  mutate(pro_KG_present_reclas = case_when(
-    is.na(pro_KG_present_long) ~ "Polar, tundra",
-    TRUE ~ pro_KG_present_long
-  ))
-
-lyr_data_KG %>% 
-  filter(is.na(pro_KG_present_reclas)) %>% 
-  count(entry_name)
-
-lyr_data_KG %>% 
   filter(depth <= 200) %>% 
   ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
-  facet_wrap(~pro_KG_present_reclas) +
+  facet_wrap(~pro_KG_present_long) +
   theme_bw(base_size = 12) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.minor = element_blank(),
@@ -338,10 +322,10 @@ lyr_data_KG %>%
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
-lyr_data_KG %>% 
+lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
-  facet_wrap(~pro_KG_present_reclas) +
+  facet_wrap(~pro_KG_present_long) +
   theme_bw(base_size = 12) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.minor = element_blank(),
@@ -353,16 +337,8 @@ lyr_data_KG %>%
                                ticks.linewidth = 2))
 
 lyr_data %>% 
-  filter(is.na(pro_usda_soil_order)) %>% 
-  count(entry_name)
-
-lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
   filter(depth <= 200) %>%
-  group_by(id) %>%
-  # # Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
-  ungroup() %>%
   filter(pro_usda_soil_order != "Aridisols",
          pro_usda_soil_order != "Histosols") %>%
   #reclassify soil type Schuur_2001: all Andisols
@@ -396,6 +372,24 @@ lyr_data %>%
   geom_smooth()
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
+
+lyr_data %>% 
+  drop_na(pro_usda_soil_order) %>% 
+  filter(depth <= 200) %>%
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
+  ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
+  geom_point(shape = 21, size = 4, alpha = 0.7) +
+  facet_wrap(~pro_usda_soil_order) +
+  theme_bw(base_size = 12) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("SOC [%]", trans = "log10") +
+  scale_y_continuous("Delat14C") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
+                               ticks.linewidth = 2))
 
 plotly::ggplotly(lyr_data %>% 
   drop_na(pro_usda_soil_order) %>%
@@ -435,15 +429,12 @@ ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
 
 lyr_data %>% 
   drop_na(pro_usda_soil_order) %>%
-  # group_by(id) %>%
-  # # Filter for studies that have more than 2 depth layers
-  # filter(n() > 2) %>%
-  # ungroup() %>% 
   filter(pro_usda_soil_order != "Aridisols",
          pro_usda_soil_order != "Histosols") %>%
   #reclassify soil type Schuur_2001: all Andisols
   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-                                       entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+                                       entry_name == "Schuur_2001" & 
+                                         pro_usda_soil_order == "Inceptisols",
                                        "Andisols")) %>%
   #reclassify soil type Guillet_1988: all Andisols
   mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
@@ -470,15 +461,6 @@ lyr_data %>%
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-### Add WRB data
-library(raster)
-WRB_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/soilOrder_250_x_x_m__WRB.tif"
-WRB_raster <- raster::raster(WRB_dir)
-WRB_soil_type <- raster::extract(WRB_raster, cbind(lyr_data$pro_long,
-                                                   lyr_data$pro_lat))
-
-
-summary(WRB_soil_type)
 
 ### Add HLZ data
 library(sf)
@@ -554,13 +536,15 @@ lyr_data_HLZ <- lyr_data_HLZ_NA %>%
   mutate(HLZ_Zone = ifelse(entry_name == "Schwartz_1992", 
                            "Tropical dry forest", HLZ_Zone)) %>%
   #Most of Hawaii has missing data
-  mutate(HLZ_Zone = ifelse(id == "Crow_2015_AND_EUC_Composite", 
+  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_AND_EUC_Composite", id),
                            "Warm temperate wet forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Crow_2015_MOL_AG_Composite", 
+  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_MOL_AG_Composite", id), 
                            "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Crow_2015_OX_AG_Composite", 
+  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_OX_AG_Composite", id), 
                            "Subtropical moist forest", HLZ_Zone)) %>% 
   mutate(HLZ_Zone = ifelse(entry_name == "Cusack_2012", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(grepl("Grant_2022_Kohala", id), 
                            "Subtropical moist forest", HLZ_Zone)) %>% 
   mutate(HLZ_Zone = ifelse(id == "Kramer_2012_Pololu_1", 
                            "Subtropical moist forest", HLZ_Zone)) %>% 
@@ -571,21 +555,23 @@ lyr_data_HLZ <- lyr_data_HLZ_NA %>%
   mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kokee (4.1my)_Kokee (4.1my)_profile_1", 
                            "Subtropical moist forest", HLZ_Zone)) %>% 
   mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kolekole (1.4my)_Kolekole (1.4my)_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kohala_Kohala_150", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kokee, Kauai_Kokee_Kauai_4100", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kolekole, Molokai_Kolekole_Molokai_1400", 
                            "Subtropical moist forest", HLZ_Zone)) 
 
 lyr_data_HLZ %>% 
   filter(is.na(HLZ_Zone)) %>% 
-  count(id)
+  count(id) %>% view()
 
 lyr_data_HLZ %>% 
   count(HLZ_Zone)
 
 lyr_data_HLZ %>% 
   filter(depth <= 200) %>%
-  group_by(id) %>%
-  # # Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
-  ungroup() %>%
   ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
   facet_wrap(~HLZ_Zone) +

@@ -8,7 +8,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-21"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-22"))
 
 lyr_all %>% 
   count(entry_name)
@@ -48,12 +48,12 @@ lyr_mpspline %>%
 ## mspline 14C
 lyr_data_mpspline_14c <- lyr_mpspline %>% 
   dplyr::select(id, lyr_top, lyr_bot, lyr_14c) %>% 
-  mpspline_tidy(vlow = -1000, lam = 0.1)
+  mpspline_tidy(vlow = -1000, lam = 0.5)
 
 ## mspline CORG
 lyr_data_mpspline_c <- lyr_mpspline %>% 
   dplyr::select(id, lyr_top, lyr_bot, CORG) %>% 
-  mpspline_tidy(vlow = 0.01, vhigh = 60, lam = 0.1)
+  mpspline_tidy(vlow = 0.01, vhigh = 60, lam = 0.5)
 
 ## 14C and SOC
 mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>% 
@@ -92,6 +92,45 @@ mspline_14c_c_all %>%
   scale_y_continuous("fitted soil organic carbon [wt-%]", expand = c(0,0), limits = c(0,55)) +
   scale_x_continuous("Depth [cm]", limits = c(0,105), expand = c(0,0)) +
   geom_smooth(method = "gam", formula = y ~ s(log(x)))
+
+## "Raw" profiles
+mspline_14c_c_all %>% 
+  filter(entry_name == "Lassey_1996") %>% 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) +
+  geom_path(aes(group = id)) +
+  facet_wrap(~ClimateZone) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        panel.spacing.x = unit(2, "lines")) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0)) +
+  scale_x_continuous("Soil organic carbon [%]", trans = "log10")
+
+
+mspline_14c_c_all %>% 
+  mutate(ClimateZone = case_when(
+    pro_usda_soil_order == "Andisols" ~ "andisols",
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) +
+  geom_path(aes(group = id)) +
+  facet_wrap(~ClimateZone) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        panel.spacing.x = unit(2, "lines")) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0)) +
+  scale_x_continuous("Soil organic carbon [%]", trans = "log10")
 
 
 ## Check Andisols
@@ -267,30 +306,11 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_depth_climate_and_", Sys.Date(),
 andi <- mspline_14c_c_all %>% 
   filter(entry_name == "Giardina_2014"|
            entry_name == "Grant_2022") %>% 
-  group_by(entry_name, UD) %>% 
+  group_by(entry_name, pro_land_cover, UD) %>% 
   mutate(lyr_14c_msp = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
          CORG_msp = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate) %>% 
   distinct(lyr_14c_msp, .keep_all = TRUE) %>% 
   ungroup()
-
-andi %>% 
-  ggplot(aes(y = UD)) +
-  geom_line(aes(x = lyr_14c_msp, color = entry_name), 
-            size = 0.7, orientation = "y") +
-  facet_wrap(~pro_land_cover+plot_name) +
-  theme_classic(base_size = 16) +
-  theme(axis.text = element_text(color = "black"),
-        panel.grid.major = element_line(color = "grey", linetype = "dotted",
-                                        size = 0.3),
-        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
-                                        size = 0.2),
-        legend.position = c(0.2,0.8),
-        legend.background = element_blank(),
-        panel.spacing.x = unit(2, "lines")) +
-  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     position = "top") +
-  scale_y_reverse("Depth [cm]", limits = c(100,0), expand = c(0,0),
-                  breaks = seq(0,100,25))
 
 climate_14c_depth_avg <- mspline_14c_c_all %>% 
   filter(entry_name != "Giardina_2014",
@@ -353,7 +373,7 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_depth_climate_avg_", Sys.Date(),
 
 ## Climate Zones and SOC
 # All profiles
-climate_soil_all <- mspline_14c_c_all %>%
+climate_all <- mspline_14c_c_all %>%
   group_by(ClimateZone, UD) %>% 
   mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
@@ -363,11 +383,11 @@ climate_soil_all <- mspline_14c_c_all %>%
          uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
          n = n(),
          n_site = n_distinct(site_name)) %>% 
-  distinct(median_pseudo, .keep_all = TRUE) %>%
+  distinct(median_14c, .keep_all = TRUE) %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n))
 
-p_climate_all <- climate_soil_all %>%
+p_climate_all <- climate_all %>%
   filter(n > 4 & n_rel > 60)  %>% 
   dplyr::select(-c(lyr_14c_msp, CORG_msp)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>%
@@ -399,7 +419,7 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_all_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 # Averaged for Giardina_2014 and Grant_2022
-climate_soil <- mspline_14c_c_all %>%
+climate_avg <- mspline_14c_c_all %>%
   filter(entry_name != "Giardina_2014",
          entry_name != "Grant_2022") %>% 
   add_row(andi) %>% 
@@ -416,7 +436,7 @@ climate_soil <- mspline_14c_c_all %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n))
 
-p_climate <- climate_soil %>%
+p_climate <- climate_avg %>%
   filter(n > 4 & n_rel > 60)  %>% 
   dplyr::select(-c(lyr_14c_msp, CORG_msp)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>%
@@ -448,7 +468,7 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_avg_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 # w/o Andisols
-climate_soil_and <- mspline_14c_c_all %>%
+climate_and <- mspline_14c_c_all %>%
   mutate(ClimateZone = case_when(
     pro_usda_soil_order == "Andisols" ~ "andisols",
     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
@@ -470,7 +490,7 @@ climate_soil_and <- mspline_14c_c_all %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n))
 
-p_climate_and <- climate_soil_and %>%
+p_climate_and <- climate_and %>%
   filter(n > 4 & n_rel > 60)  %>% 
   dplyr::select(-c(lyr_14c_msp, CORG_msp)) %>% 
   distinct(median_14c, .keep_all = TRUE) %>%
@@ -504,7 +524,7 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_and_", Sys.Date(),
 ### Clay types
 
 ## Averaged andisols
-clay <- mspline_14c_c_all %>%
+clay_avg <- mspline_14c_c_all %>%
   filter(entry_name != "Giardina_2014",
          entry_name != "Grant_2022") %>%
   add_row(andi) %>%
@@ -527,7 +547,7 @@ clay <- mspline_14c_c_all %>%
   mutate(n_rel = n * 100 / max(n))
 
 ## with depth
-clay %>% 
+clay_avg %>% 
   filter(n > 4 & n_rel > 60) %>% 
   ggplot(aes(y = UD)) +
   geom_line(aes(x = median_14c, color = ClayType), size = 0.7, orientation = "y") +
@@ -547,7 +567,7 @@ clay %>%
   scale_y_reverse("Depth [cm]", limits = c(100,0), expand = c(0,0),
                   breaks = seq(0,100,25))   
 
-p_clay <- clay %>% 
+p_clay <- clay_avg %>% 
   filter(n > 4 & n_rel > 60)  %>% 
   arrange(UD) %>% 
   ggplot(aes(x = median_c, y = median_14c, color = ClayType)) +
@@ -647,7 +667,7 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_clay_and_", Sys.Date(),
 ### Climate zones and clay types
 
 ## Averaged andisols
-climate_clay <- mspline_14c_c_all %>%
+climate_clay_avg <- mspline_14c_c_all %>%
   filter(entry_name != "Giardina_2014",
          entry_name != "Grant_2022") %>%
   add_row(andi) %>%
@@ -670,7 +690,7 @@ climate_clay <- mspline_14c_c_all %>%
   mutate(n_rel = n * 100 / max(n))
 
 ## with depth
-climate_clay %>% 
+climate_clay_avg %>% 
   filter(n > 4 & n_rel > 60) %>% 
   ggplot(aes(y = UD)) +
   geom_line(aes(x = median_14c, color = ClayType), size = 0.7, orientation = "y") +
@@ -694,7 +714,7 @@ climate_clay %>%
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_depth_climate_clay_avg_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-climate_clay %>% 
+climate_clay_avg %>% 
   filter(ClimateZone == "temperate" & ClayType == "high-activity"|
          ClimateZone == "cold/polar" & ClayType == "high-activity"|
          ClimateZone == "temperate" & ClayType == "low-activity"|
@@ -724,7 +744,7 @@ climate_clay %>%
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_depth_climate_clay_avg_red_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-p_climate_clay <- climate_clay %>% 
+p_climate_clay <- climate_clay_avg %>% 
   filter(n > 4 & n_rel > 60)  %>% 
   arrange(UD) %>% 
   ggplot(aes(x = median_c, y = median_14c, color = ClayType)) +
@@ -751,7 +771,7 @@ p_climate_clay +
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_clay_avg_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-climate_clay %>% 
+climate_clay_avg %>% 
   filter(ClimateZone == "temperate" & ClayType == "high-activity"|
            ClimateZone == "cold/polar" & ClayType == "high-activity"|
            ClimateZone == "temperate" & ClayType == "low-activity"|

@@ -4,7 +4,7 @@
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 
-File: VÃ¤liranta_2003.xlsx
+File: Väliranta_2003.xlsx
 
 Checking file type...
 
