@@ -66,7 +66,10 @@ mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>%
 mspline_14c_c_all <- mspline_14c_c %>%
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id, .keep_all = TRUE), 
-                   by = "id") 
+                   by = "id") %>% 
+  group_by(id) %>% 
+  arrange(UD) %>% 
+  ungroup()
 
 mspline_14c_c_all %>% 
   summarise(n_studies = n_distinct(entry_name),
@@ -95,30 +98,11 @@ mspline_14c_c_all %>%
 
 ## "Raw" profiles
 mspline_14c_c_all %>% 
-  filter(entry_name == "Lassey_1996") %>% 
-  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) +
-  geom_path(aes(group = id)) +
-  facet_wrap(~ClimateZone) +
-  theme_classic(base_size = 16) +
-  theme(axis.text = element_text(color = "black"),
-        panel.grid.major = element_line(color = "grey", linetype = "dotted",
-                                        size = 0.3),
-        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
-                                        size = 0.2),
-        panel.spacing.x = unit(2, "lines")) +
-  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0)) +
-  scale_x_continuous("Soil organic carbon [%]", trans = "log10")
-
-
-mspline_14c_c_all %>% 
-  mutate(ClimateZone = case_when(
-    pro_usda_soil_order == "Andisols" ~ "andisols",
-    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
-    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
-    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Arid") ~ "arid",
-  )) %>% 
+  group_by(ClimateZone, UD) %>% 
+  mutate(n = n()) %>%
+  ungroup(UD) %>% 
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 60) %>% 
   ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) +
   geom_path(aes(group = id)) +
   facet_wrap(~ClimateZone) +
@@ -199,7 +183,6 @@ mspline_14c_c_all %>%
 
 ## Climate and depth
 climate_14c_depth <-  mspline_14c_c_all %>% 
-  dplyr::filter(LD != 101) %>% 
   group_by(ClimateZone, UD) %>% 
   mutate(median_pseudo = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_median = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],

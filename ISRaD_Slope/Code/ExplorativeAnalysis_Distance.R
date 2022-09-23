@@ -8,7 +8,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-21"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-22"))
 
 lyr_all %>% 
   count(entry_name)
@@ -26,10 +26,11 @@ lyr_mpspline <- lyr_all %>%
   arrange(depth, .by_group = TRUE) %>% 
   ungroup() %>% 
   mutate(ClimateZone = case_when(
+    pro_usda_soil_order == "Andisols" ~ "andisols",
     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
     str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
-    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold",
+    str_detect(pro_KG_present_long, "Polar") ~ "polar",
     str_detect(pro_KG_present_long, "Arid") ~ "arid",
   )) %>% 
   #remove for now: need to fix depth
@@ -48,12 +49,12 @@ lyr_mpspline %>%
 ## mspline 14C
 lyr_data_mpspline_14c <- lyr_mpspline %>% 
   dplyr::select(id, lyr_top, lyr_bot, lyr_14c) %>% 
-  mpspline_tidy(vlow = -1000, lam = 0.1)
+  mpspline_tidy(vlow = -1000, lam = 0.5)
 
 ## mspline CORG
 lyr_data_mpspline_c <- lyr_mpspline %>% 
   dplyr::select(id, lyr_top, lyr_bot, CORG) %>% 
-  mpspline_tidy(vlow = 0.01, vhigh = 60, lam = 0.1)
+  mpspline_tidy(vlow = 0.01, vhigh = 60, lam = 0.5)
 
 ## 14C and SOC
 mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>% 
@@ -66,7 +67,10 @@ mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>%
 mspline_14c_c_all <- mspline_14c_c %>%
   dplyr::left_join(lyr_mpspline %>% 
                      distinct(id, .keep_all = TRUE), 
-                   by = "id") 
+                   by = "id") %>% 
+  group_by(id) %>% 
+  arrange(UD) %>% 
+  ungroup()
 
 mspline_14c_c_all %>% 
   summarise(n_studies = n_distinct(entry_name),
@@ -75,12 +79,107 @@ mspline_14c_c_all %>%
 
 head(mspline_14c_c_all)
 
+
+mspline_14c_c_all %>%
+  group_by(ClimateZone, UD) %>% 
+  mutate(n = n()) %>%
+  ungroup(UD) %>% 
+  mutate(n_rel = n * 100 / max(n)) 
+  
 mspline_14c_c_all %>% 
   dplyr::select(id, UD, lyr_14c_msp) %>% 
   pivot_wider(names_from =  id, values_from = lyr_14c_msp) %>% 
   dplyr::select(-UD) %>% 
   data.matrix() %>% 
   dist() 
+
+### Slope analysis
+library(lme4)
+library(broom)
+
+plotly::ggplotly(
+  mspline_14c_c_all %>% 
+    group_by(ClimateZone, UD) %>% 
+    mutate(n = n()) %>%
+    ungroup(UD) %>% 
+    mutate(n_rel = n * 100 / max(n)) %>% 
+    filter(n > 4 & n_rel > 60) %>% 
+    ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) +
+    geom_path(aes(group = id, color = ClimateZone)) +
+    facet_wrap(~ClimateZone) +
+    theme_bw(base_size = 16) +
+    theme(axis.text = element_text(color = "black"),
+          legend.position = "none") +
+    scale_y_continuous(expression(paste(Delta^14, "C"))) +
+    scale_x_continuous("Soil organic carbon [%]", trans = "log10")
+)
+
+model_lm <- mspline_14c_c_all %>% group_by(ClimateZone, UD) %>% 
+  mutate(n = n()) %>%
+  ungroup(UD) %>% 
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 60) %>%
+  group_by(id) %>% 
+  do(fit = tidy(lm(lyr_14c_msp ~ log10(CORG_msp), data = .))) %>% 
+  unnest(fit) %>% 
+  filter(term == "log10(CORG_msp)") 
+
+sum_data <- mspline_14c_c_all %>% 
+  group_by(ClimateZone, UD) %>% 
+  mutate(n = n()) %>%
+  ungroup(UD) %>% 
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 60) %>%
+  dplyr::select(id, lyr_14c_msp, CORG_msp, ClimateZone, pro_usda_soil_order) %>% 
+  group_by(id, ClimateZone, pro_usda_soil_order) %>% 
+  summarise(max_14c = max(lyr_14c_msp),
+            min_14c = min(lyr_14c_msp),
+            max_CORG = max(CORG_msp),
+            min_CORG = min(CORG_msp))
+
+model_data <- sum_data %>% 
+  left_join(model_lm)
+
+# how to interpret log10: https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/
+plotly::ggplotly(
+  model_data %>% 
+    ggplot(aes(y = estimate*log(1.01), x = (max_CORG-min_CORG), fill = ClimateZone, group = id)) +
+    geom_point(size = 3, shape = 21) +
+    facet_wrap(~ClimateZone) +
+    theme_bw(base_size = 16) +
+    theme(axis.text = element_text(color = "black")) +
+    scale_y_continuous("Slope: lyr_14c ~ log10(CORG)") +
+    scale_x_continuous("CORG: max-min", expand = c(0,0), limits = c(0,45))
+)
+
+model_sum <- model_data %>% 
+  group_by(ClimateZone) %>% 
+  summarise(median_slope = median(estimate*log(1.01)),
+            mad_slope = mad(estimate*log(1.01)),
+            median_CORG = median((min_CORG-max_CORG)/max_CORG*100),
+            mad_CORG = mad((min_CORG-max_CORG)/max_CORG*100))
+
+plotly::ggplotly(
+  ggplot() +
+    geom_point(data = model_data,
+               aes(y = estimate*log(1.01), x = (min_CORG-max_CORG)/max_CORG*100,
+                   fill = ClimateZone, group = id),
+               size = 3, shape = 21, alpha = 0.3) +
+    geom_errorbarh(data = model_sum,
+                   aes(y = median_slope,
+                       xmin = median_CORG-mad_CORG, xmax = median_CORG+mad_CORG)) +
+    geom_errorbar(data = model_sum,
+                  aes(x = median_CORG,
+                      ymin = median_slope-mad_slope, ymax = median_slope+mad_slope)) +
+    geom_point(data = model_sum,
+               aes(x = median_CORG, y = median_slope,
+                   fill = ClimateZone), size = 3, shape = 21) +
+    # facet_wrap(~ClimateZone) +
+    theme_bw(base_size = 16) +
+    theme(axis.text = element_text(color = "black")) +
+    scale_y_continuous("Slope: lyr_14c ~ log10(CORG)") +
+    scale_x_continuous("rel. change in SOC")
+)
 
 
 ### Cluster analysis
@@ -102,13 +201,25 @@ d.1 <- profile_compare(mspline_cluster, vars = c("lyr_14c_msp", "CORG_msp"),
                        max_d = 100, k = 0, replace_na = TRUE, add_soil_flag = TRUE)
 str(d.1)
 
-plot(as.dendrogram(hclust(d.1)))
+labels(d.1)
+
+d.m <- signif(as.matrix(d.1 / max(d.1)), 2)
+head(d.m[1,])
+
+d.sam <- MASS::sammon(d.1)
+head(d.sam$points)
 
 h <- diana(d.1)
 p <- as.phylo(as.hclust(h))
-plot(p, show.tip.label=FALSE)
-# tiplabels(mspline_14c_c_all$pro_name, col=cutree(h, 3), bg=NA, cex=0.75)
+plot(p, show.tip.label=FALSE, col=cutree(h, 5))
+tiplabels(mspline_14c_c_all$pro_name, col=cutree(h, 5), bg=NA, cex=0.75)
 
+str(d.sam)
+
+dev.off() ; dev.new()
+plot(d.sam$points, type = "p", col=cutree(h, 5))
+text(d.sam$points, labels=row.names(as.data.frame(d.sam$points)), 
+     cex=0.75, col=cutree(h, 5))
 
 ## Not ideal yet
 # need to assign id first
