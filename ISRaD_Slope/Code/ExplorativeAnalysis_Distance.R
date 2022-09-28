@@ -39,6 +39,14 @@ lyr_mpspline <- lyr_all %>%
 summary(lyr_mpspline$CORG)
 summary(lyr_mpspline$lyr_14c)
 
+lyr_mpspline$ClimateZone <- factor(lyr_mpspline$ClimateZone,
+                                   levels = c("andisols", "polar", "cold",
+                                              "temperate", "arid", "tropical"))
+summary(lyr_mpspline$ClimateZone)
+
+
+summary(lyr_mpspline$pro_usda_soil_order)
+
 lyr_mpspline %>% 
   summarise(n_studies = n_distinct(entry_name),
             n_sites = n_distinct(site_name),
@@ -97,13 +105,17 @@ mspline_14c_c_all %>%
 library(lme4)
 library(broom)
 
+mspline_14c_c_all$ClimateZone <- factor(mspline_14c_c_all$ClimateZone,
+                                        levels = c("andisols", "polar", "cold",
+                                                   "temperate", "arid", "tropical"))
+
 plotly::ggplotly(
   mspline_14c_c_all %>% 
-    group_by(ClimateZone, UD) %>% 
+    group_by(ClimateZone, UD) %>%
     mutate(n = n()) %>%
-    ungroup(UD) %>% 
-    mutate(n_rel = n * 100 / max(n)) %>% 
-    filter(n > 4 & n_rel > 60) %>% 
+    ungroup(UD) %>%
+    mutate(n_rel = n * 100 / max(n)) %>%
+    filter(n > 4 & n_rel > 60) %>%
     ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) +
     geom_path(aes(group = id, color = ClimateZone)) +
     facet_wrap(~ClimateZone) +
@@ -114,73 +126,186 @@ plotly::ggplotly(
     scale_x_continuous("Soil organic carbon [%]", trans = "log10")
 )
 
-model_lm <- mspline_14c_c_all %>% group_by(ClimateZone, UD) %>% 
-  mutate(n = n()) %>%
-  ungroup(UD) %>% 
-  mutate(n_rel = n * 100 / max(n)) %>% 
-  filter(n > 4 & n_rel > 60) %>%
+model_lm <- mspline_14c_c_all %>% 
   group_by(id) %>% 
   do(fit = tidy(lm(lyr_14c_msp ~ log10(CORG_msp), data = .))) %>% 
   unnest(fit) %>% 
   filter(term == "log10(CORG_msp)") 
 
 sum_data <- mspline_14c_c_all %>% 
-  group_by(ClimateZone, UD) %>% 
-  mutate(n = n()) %>%
-  ungroup(UD) %>% 
-  mutate(n_rel = n * 100 / max(n)) %>% 
-  filter(n > 4 & n_rel > 60) %>%
-  dplyr::select(id, lyr_14c_msp, CORG_msp, ClimateZone, pro_usda_soil_order) %>% 
   group_by(id, ClimateZone, pro_usda_soil_order) %>% 
   summarise(max_14c = max(lyr_14c_msp),
             min_14c = min(lyr_14c_msp),
             max_CORG = max(CORG_msp),
-            min_CORG = min(CORG_msp))
+            min_CORG = min(CORG_msp),
+            MAP = mean(pro_BIO12_mmyr_WC2.1),
+            MAT = mean(pro_BIO1_C_WC2.1)) %>% 
+  ungroup()
 
 model_data <- sum_data %>% 
   left_join(model_lm)
 
 # how to interpret log10: https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/
-plotly::ggplotly(
-  model_data %>% 
-    ggplot(aes(y = estimate*log(1.01), x = (max_CORG-min_CORG), fill = ClimateZone, group = id)) +
-    geom_point(size = 3, shape = 21) +
-    facet_wrap(~ClimateZone) +
-    theme_bw(base_size = 16) +
-    theme(axis.text = element_text(color = "black")) +
-    scale_y_continuous("Slope: lyr_14c ~ log10(CORG)") +
-    scale_x_continuous("CORG: max-min", expand = c(0,0), limits = c(0,45))
-)
+# For x percent increase of independent variable (CORG), multiply the coefficient by log(1.x)
+
+p1 <- model_data %>% 
+  ggplot(aes(y = estimate*log(1.01), x = (max_CORG-min_CORG)/max_CORG*100, 
+             fill = ClimateZone, group = id)) +
+  geom_point(size = 3, shape = 21) +
+  facet_wrap(~ClimateZone) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0), limits = c(-22,40)) +
+  scale_x_continuous("rel. change in SOC with depth", expand = c(0,0), limits = c(0,105))
+
+p1
+# plotly::ggplotly(p1)
 
 model_sum <- model_data %>% 
   group_by(ClimateZone) %>% 
   summarise(median_slope = median(estimate*log(1.01)),
             mad_slope = mad(estimate*log(1.01)),
-            median_CORG = median((min_CORG-max_CORG)/max_CORG*100),
-            mad_CORG = mad((min_CORG-max_CORG)/max_CORG*100))
+            median_CORG = median((max_CORG-min_CORG)/max_CORG*100),
+            mad_CORG = mad((max_CORG-min_CORG)/max_CORG*100))
 
-plotly::ggplotly(
-  ggplot() +
-    geom_point(data = model_data,
-               aes(y = estimate*log(1.01), x = (min_CORG-max_CORG)/max_CORG*100,
-                   fill = ClimateZone, group = id),
-               size = 3, shape = 21, alpha = 0.3) +
-    geom_errorbarh(data = model_sum,
-                   aes(y = median_slope,
-                       xmin = median_CORG-mad_CORG, xmax = median_CORG+mad_CORG)) +
-    geom_errorbar(data = model_sum,
-                  aes(x = median_CORG,
-                      ymin = median_slope-mad_slope, ymax = median_slope+mad_slope)) +
-    geom_point(data = model_sum,
-               aes(x = median_CORG, y = median_slope,
-                   fill = ClimateZone), size = 3, shape = 21) +
-    # facet_wrap(~ClimateZone) +
-    theme_bw(base_size = 16) +
-    theme(axis.text = element_text(color = "black")) +
-    scale_y_continuous("Slope: lyr_14c ~ log10(CORG)") +
-    scale_x_continuous("rel. change in SOC")
-)
 
+p2 <- ggplot() +
+  geom_point(data = model_data,
+             aes(y = estimate*log(1.01), x = (max_CORG-min_CORG)/max_CORG*100,
+                 fill = ClimateZone, group = id),
+             size = 3, shape = 21, alpha = 0.3) +
+  geom_errorbarh(data = model_sum,
+                 aes(y = median_slope,
+                     xmin = median_CORG-mad_CORG, xmax = median_CORG+mad_CORG)) +
+  geom_errorbar(data = model_sum,
+                aes(x = median_CORG,
+                    ymin = median_slope-mad_slope, ymax = median_slope+mad_slope)) +
+  geom_point(data = model_sum,
+             aes(x = median_CORG, y = median_slope,
+                 fill = ClimateZone), size = 3, shape = 21) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0), limits = c(-22,40)) +
+  scale_x_continuous("rel. change in SOC with depth", expand = c(0,0), limits = c(0,105))
+
+p2
+# plotly::ggplotly(p2)
+
+ggarrange(p1,p2)
+ggsave(file = paste0("./Figure/ISRaD_msp_slope_SOC_climate_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+model_data %>% 
+  ggplot(aes(y = estimate*log(1.01), x = MAP)) +
+  geom_point(aes(fill = MAT), size = 3, shape = 21) +
+  # facet_wrap(~ClimateZone) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0), limits = c(-22,40)) +
+  scale_x_continuous("Mean annual precipitation [mm]", limits = c(0,3000)) +
+  scale_fill_viridis_c("MAT [°C]", option = "C")
+ggsave(file = paste0("./Figure/ISRaD_msp_slope_MAP_MAT_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+model_data %>% 
+  ggplot(aes(x = ClimateZone, y = estimate*log(1.01))) +
+  geom_boxplot(notch = TRUE, outlier.colour = NA) +
+  geom_jitter(width = 0.2, height = 0, shape = 21, aes(fill = ClimateZone)) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0),
+                     limits = c(-22,60)) +
+  scale_x_discrete("")
+ggsave(file = paste0("./Figure/ISRaD_msp_slope_climate_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+
+model_data %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  ggplot(aes(x = pro_usda_soil_order, y = estimate*log(1.01))) +
+  geom_boxplot(notch = TRUE, outlier.colour = NA) +
+  geom_jitter(width = 0.2, height = 0, shape = 21, aes(fill = pro_usda_soil_order)) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0),
+                     limits = c(-22,60)) +
+  scale_x_discrete("")
+ggsave(file = paste0("./Figure/ISRaD_msp_slope_soiltype_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+library(rstatix)
+library(ggpubr)
+
+#Climate
+model_data %>% 
+  mutate(estimate_trans = estimate*log(1.01)) %>% 
+  group_by(ClimateZone) %>% 
+  get_summary_stats(estimate_trans, type = "median_mad")
+
+res.aov_c <- model_data %>% 
+  mutate(estimate_trans = estimate*log(1.01)) %>% 
+  anova_test(estimate_trans ~ ClimateZone)
+res.aov_c
+
+pwc_c <- model_data %>% 
+  mutate(estimate_trans = estimate*log(1.01)) %>% 
+  pairwise_t_test(estimate_trans ~ ClimateZone, p.adjust.method = "bonferroni")
+pwc_c
+
+pwc_c <- pwc_c %>% 
+  add_xy_position(x = "ClimateZone")
+ggboxplot(model_data %>% 
+            mutate(estimate_trans = estimate*log(1.01)), 
+          x = "ClimateZone", y = "estimate_trans",
+          xlab = "", ylab = "Slope: lyr_14c ~ log10(CORG)", notch = TRUE) +
+  stat_pvalue_manual(pwc_c, hide.ns = TRUE, label = "p.adj.signif") +
+  labs(
+    subtitle = get_test_label(res.aov_c, detailed = TRUE),
+    caption = get_pwc_label(pwc_c)
+  )
+
+#Soil type
+model_data_st <- model_data %>% 
+  filter(pro_usda_soil_order != "Aridisols") %>% 
+  mutate(estimate_trans = estimate*log(1.01))
+
+model_data_st$pro_usda_soil_order <- factor(model_data_st$pro_usda_soil_order,
+                                            levels = c("Alfisols", "Andisols",
+                                                       "Entisols", "Gelisols", 
+                                                       "Inceptisols", "Mollisols", 
+                                                       "Oxisols", "Spodosols", 
+                                                       "Ultisols", "Vertisols"))
+
+model_data_st %>% 
+  group_by(pro_usda_soil_order) %>% 
+  get_summary_stats(estimate_trans, type = "median_mad")
+
+res.aov_st <- model_data_st %>% 
+  anova_test(estimate_trans ~ pro_usda_soil_order)
+res.aov_st
+
+pwc_st <- model_data_st %>% 
+  pairwise_t_test(estimate_trans ~ pro_usda_soil_order, 
+                  p.adjust.method = "bonferroni")
+pwc_st
+
+pwc_st <- pwc_st %>% 
+  add_xy_position(x = "pro_usda_soil_order")
+pwc_st %>% view()
+
+ggboxplot(model_data_st, 
+          x = "pro_usda_soil_order", y = "estimate_trans",
+          xlab = "", ylab = "Slope: lyr_14c ~ log10(CORG)", notch = TRUE) +
+  stat_pvalue_manual(pwc_st, hide.ns = TRUE, label = "p.adj.signif") +
+  labs(
+    subtitle = get_test_label(res.aov_st, detailed = TRUE),
+    caption = get_pwc_label(pwc_st)
+  )
 
 ### Cluster analysis
 ## https://ncss-tech.github.io/AQP/aqp/aqp-profile-dissimilarity.html

@@ -11,23 +11,22 @@ library(ggpubr)
 lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-22"))
 
 lyr_all %>% 
-  count(entry_name)
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 lyr_data <- lyr_all %>% 
   filter(lyr_obs_date_y > 1959) %>% 
-  # filter(lyr_bot <= 100) %>% 
-  # filter(lyr_top <= 100) %>%
   group_by(id) %>%
-  # filter(min(lyr_top) == 0) %>% 
   #Filter for studies that have more than 2 depth layers
-  # filter(n() > 2) %>%
+  filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
   ungroup() %>% 
   mutate(ClimateZone = case_when(
     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
     str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
-    str_detect(pro_KG_present_long, "Cold") ~ "cold/polar",
-    str_detect(pro_KG_present_long, "Polar") ~ "cold/polar",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold",
+    str_detect(pro_KG_present_long, "Polar") ~ "polar",
     str_detect(pro_KG_present_long, "Arid") ~ "arid",
   )) %>% 
   ungroup() %>% 
@@ -36,6 +35,11 @@ lyr_data <- lyr_all %>%
 
 lyr_data %>% 
   count(entry_name) %>% view()
+
+lyr_data %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 names(lyr_data)
 
@@ -51,7 +55,7 @@ climate_raster <- raster::raster(climate_dir)
 plot(climate_raster)
 
 #reclassify climate raster
-recal <- c(1,3,1, 3,7,2, 7,16,3, 16,30,4)
+recal <- c(0,3,1, 3,7,2, 7,16,3, 16,28,4, 28,30,5)
 recal_mat <- matrix(recal, ncol = 3, byrow = TRUE)
 
 climate_grp <- reclassify(climate_raster, recal_mat)
@@ -68,7 +72,8 @@ climate_df  <- data.frame(climate_pts) %>%
     ClimateZone == 1 ~ "tropical",
     ClimateZone == 2 ~ "arid",
     ClimateZone == 3 ~ "temperate",
-    ClimateZone == 4 ~ "cold/polar"
+    ClimateZone == 4 ~ "cold",
+    ClimateZone == 5 ~ "polar"
   ))
 
 rm(climate_pts)

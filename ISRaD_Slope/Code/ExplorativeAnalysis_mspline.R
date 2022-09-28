@@ -17,10 +17,7 @@ names(lyr_all)
 
 lyr_mpspline <- lyr_all %>% 
   filter(lyr_obs_date_y > 1959) %>% 
-  # filter(lyr_bot <= 100) %>% 
-  # filter(lyr_top <= 100) %>%
   group_by(id) %>%
-  # filter(min(lyr_top) == 0) %>% 
   #Filter for studies that have more than 2 depth layers
   filter(n() > 2) %>%
   arrange(depth, .by_group = TRUE) %>% 
