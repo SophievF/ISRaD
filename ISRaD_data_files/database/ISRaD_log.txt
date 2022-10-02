@@ -1,6 +1,6 @@
 ISRaD Compilation Log 
  
- 2022-09-22 10:07:47 
+ 2022-10-01 14:33:36 
  - - - - - - - - - - - - - - - 
 
 
@@ -164,7 +164,7 @@ Compiling data files in C:/Users/sfromm/Documents/GitHub/ISRaD_SvF/ISRaD_data_fi
 
  78 checking Czimczik_2010.xlsx ...New data - passed QAQC
 
- 79 checking Czimczik_Thesis_2003.xlsx ...New data - passed QAQC
+ 79 checking Czimczik_Thesis_2003_SvF.xlsx ...New data - passed QAQC
 
  80 checking Czimczik_Unpublished.xlsx ...New data - passed QAQC
 
@@ -827,7 +827,7 @@ Summary statistics...
  metadata tab...428 observations
     entry_name : 428
     doi : 428
-    compilation_doi : 174
+    compilation_doi : 173
     curator_name : 428
     curator_organization : 428
     curator_email : 428
@@ -846,7 +846,7 @@ Summary statistics...
     site_name : 1314
     site_lat : 1314
     site_long : 1314
-    site_datum : 563
+    site_datum : 575
     site_elevation : 815
     site_note : 779
  profile tab...4388 observations
@@ -866,9 +866,9 @@ Summary statistics...
     pro_MAP : 2492
     pro_peatland : 1244
     pro_usda_soil_order : 2093
-    pro_soil_series : 529
+    pro_soil_series : 541
     pro_soil_taxon : 1915
-    pro_soil_taxon_sys : 1668
+    pro_soil_taxon_sys : 1657
     pro_chrono_name : 27
     pro_soil_age : 208
     pro_soil_age_note : 40
@@ -878,7 +878,7 @@ Summary statistics...
     pro_lc_phenology : 246
     pro_lc_leaf_type : 230
     pro_lc_photosyn_path : 220
-    pro_veg_note : 2652
+    pro_veg_note : 2640
     pro_NPP : 11
     pro_bedrock_depth : 169
     pro_complete : 4
@@ -886,7 +886,7 @@ Summary statistics...
     pro_thaw_depth : 201
     pro_parent_material : 969
     pro_parent_chem : 613
-    pro_parent_material_notes : 1231
+    pro_parent_material_notes : 1243
     pro_2d_position : 312
     pro_aspect : 171
     pro_aspect_deg : 94
@@ -960,7 +960,7 @@ Summary statistics...
     lyr_hzn : 24872
     lyr_comp : 1441
     lyr_igsn : 8
-    lyr_note : 15943
+    lyr_note : 15932
     lyr_color : 1212
     lyr_color_dry : 19
     lyr_burn_ev : 283
@@ -976,7 +976,7 @@ Summary statistics...
     lyr_bet_surface_area : 294
     lyr_ph_cacl : 389
     lyr_ph_h2o : 1600
-    lyr_ph : 3183
+    lyr_ph : 3292
     lyr_ph_method : 1543
     lyr_cat_exch : 378
     lyr_base_sum : 65
@@ -988,7 +988,7 @@ Summary statistics...
     lyr_ecec : 326
     lyr_bs : 374
     lyr_c_inorg : 1578
-    lyr_c_org : 4225
+    lyr_c_org : 4334
     lyr_c_tot : 9512
     lyr_soc : 1948
     lyr_soc_sigma : 297
@@ -1004,8 +1004,8 @@ Summary statistics...
     lyr_14c : 3957
     lyr_14c_sigma : 2753
     lyr_14c_sd : 89
-    lyr_fraction_modern : 6052
-    lyr_fraction_modern_sigma : 5406
+    lyr_fraction_modern : 6059
+    lyr_fraction_modern_sigma : 5413
     lyr_fraction_modern_sd : 9
     lyr_mbc_method : 185
     lyr_raw_mbc : 14
@@ -1019,19 +1019,19 @@ Summary statistics...
     lyr_fe_al_py : 85
     lyr_c_py : 150
     lyr_py_notes : 585
-    lyr_fe_ox : 1637
-    lyr_al_ox : 1645
+    lyr_fe_ox : 1649
+    lyr_al_ox : 1657
     lyr_si_ox : 180
     lyr_noncrystalline_ox : 12
-    lyr_ox_notes : 1249
+    lyr_ox_notes : 1261
     lyr_fe_hy : 171
     lyr_al_hy : 171
     lyr_si_hy : 13
     lyr_hy_notes : 34
-    lyr_fe_dith : 1122
+    lyr_fe_dith : 1135
     lyr_al_dith : 820
     lyr_si_dith : 4
-    lyr_dith_notes : 707
+    lyr_dith_notes : 719
     lyr_quartz : 779
     lyr_alkali_feldspar : 699
     lyr_plag_feldspar : 729

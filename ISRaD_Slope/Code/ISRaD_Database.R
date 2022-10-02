@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-09-22")
+ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-10-01")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -291,13 +291,10 @@ lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
     entry_name == "Torn_1997" & pro_usda_soil_order == "Andisols" ~ "Andosols",
     entry_name == "Trumbore_Harden_1997" & pro_usda_soil_order == "Gelisols" ~ "Cryosols",
     entry_name == "Trumbore_Harden_1997" & pro_usda_soil_order == "Spodosols" ~ "Podzols",
+    entry_name == "Leavitt_2007" & pro_name == "MES" ~ "Chernozems",
     TRUE ~ pro_wrb_soil_order
   )) 
 
-
-lyr_data_fill_wrb %>% 
-  filter(is.na(pro_250m_wrb_soil_order)) %>% 
-  count(entry_name, pro_name)
 
 lyr_data_fill_wrb %>% 
   count(entry_name, pro_name, pro_250m_wrb_soil_order,
