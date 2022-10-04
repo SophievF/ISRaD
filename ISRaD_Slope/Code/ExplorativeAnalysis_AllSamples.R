@@ -11,25 +11,28 @@ library(mpspline2)
 lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-02"))
 
 lyr_all %>% 
-  count(entry_name)
-
-names(lyr_all)
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 lyr_data <- lyr_all %>% 
   filter(lyr_obs_date_y > 1959) %>% 
+  group_by(id) %>%
+  #Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  arrange(depth, .by_group = TRUE) %>% 
+  ungroup() %>% 
   mutate(ClimateZone = case_when(
+    entry_name == "Gentsch_2018" ~ "polar",
+    pro_usda_soil_order == "Gelisols" ~ "polar",
     pro_usda_soil_order == "Andisols" ~ "andisols",
     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
     str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
     str_detect(pro_KG_present_long, "Cold") ~ "cold",
     str_detect(pro_KG_present_long, "Polar") ~ "polar",
     str_detect(pro_KG_present_long, "Arid") ~ "arid",
-  )) 
-
-lyr_data %>% 
-  summarise(n_studies = n_distinct(entry_name),
-            n_sites = n_distinct(site_name),
-            n_profiles = n_distinct(id))
+  )) %>% 
+  ungroup() 
 
 ### Density distribution
 p1 <- lyr_data %>% 

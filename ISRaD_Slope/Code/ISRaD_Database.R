@@ -204,7 +204,7 @@ summary(lyr_data_fill$pro_BIO12_mmyr_WC2.1)
 WRB_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/ISRIC_WRB_map.tif"
 WRB_raster <- raster::raster(WRB_dir)
 wrb_number <- raster::extract(WRB_raster, cbind(lyr_data_fill$pro_long,
-                                                        lyr_data_fill$pro_lat))
+                                                lyr_data_fill$pro_lat))
 
 wrb_legend <- read_csv("D:/Sophie/PhD/AfSIS_GlobalData/ISRIC_WRB_map_legend.csv") %>% 
   dplyr::select(Number, WRB_group) %>% 
@@ -292,13 +292,15 @@ lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
     entry_name == "Trumbore_Harden_1997" & pro_usda_soil_order == "Gelisols" ~ "Cryosols",
     entry_name == "Trumbore_Harden_1997" & pro_usda_soil_order == "Spodosols" ~ "Podzols",
     entry_name == "Leavitt_2007" & pro_name == "MES" ~ "Chernozems",
+    entry_name == "Krull_2005" ~ "Vertisols",
+    entry_name == "Schuur_2001" & pro_name == "Maui_5" ~ "Andosols",
     TRUE ~ pro_wrb_soil_order
   )) 
 
 
 lyr_data_fill_wrb %>% 
   count(entry_name, pro_name, pro_250m_wrb_soil_order,
-        pro_wrb_soil_order, pro_soil_taxon) %>% view()
+        pro_wrb_soil_order, pro_soil_taxon, pro_usda_soil_order) %>% view()
 
 lyr_data_fill_wrb %>% 
   filter(is.na(pro_wrb_soil_order)) %>% 

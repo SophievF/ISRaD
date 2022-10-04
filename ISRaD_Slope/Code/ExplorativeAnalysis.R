@@ -8,7 +8,7 @@ library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-22"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-02"))
 
 lyr_all %>% 
   summarise(n_studies = n_distinct(entry_name),
@@ -23,6 +23,8 @@ lyr_data <- lyr_all %>%
   arrange(depth, .by_group = TRUE) %>% 
   ungroup() %>% 
   mutate(ClimateZone = case_when(
+    entry_name == "Gentsch_2018" ~ "polar",
+    pro_usda_soil_order == "Gelisols" ~ "polar",
     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
     str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
     str_detect(pro_KG_present_long, "Cold") ~ "cold",
@@ -42,6 +44,15 @@ lyr_data %>%
             n_profiles = n_distinct(id))
 
 names(lyr_data)
+
+## Check climate
+lyr_data %>% 
+  filter(pro_country == "Russia") %>% 
+  count(entry_name, ClimateZone, pro_usda_soil_order)
+
+lyr_data %>% 
+  filter(pro_usda_soil_order == "Gelisols") %>% 
+  count(entry_name, ClimateZone, pro_country, pro_usda_soil_order)
 
 ## Mapping sampling locations ##
 
@@ -101,7 +112,6 @@ ggplot() +
 ggsave(file = paste0("./Figure/ISRaD_14C_Climate_map_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
   
-  
 ggplot() +  
   geom_map(
     data = world, map = world,
@@ -147,6 +157,12 @@ lyr_data %>%
                      breaks = seq(0,65,20))
 ggsave(file = paste0("./Figure/ISRaD_climate_soiltype_dis_usda_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
+
+lyr_data %>% 
+  group_by(ClimateZone) %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 #Andisols are driving patterns in temperate regions
 lyr_data %>% 

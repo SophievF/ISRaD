@@ -26,6 +26,8 @@ lyr_mpspline <- lyr_all %>%
   arrange(depth, .by_group = TRUE) %>% 
   ungroup() %>% 
   mutate(ClimateZone = case_when(
+    entry_name == "Gentsch_2018" ~ "polar",
+    pro_usda_soil_order == "Gelisols" ~ "polar",
     pro_usda_soil_order == "Andisols" ~ "andisols",
     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
     str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
@@ -136,17 +138,31 @@ sum_data <- mspline_14c_c_all %>%
   group_by(id, ClimateZone, pro_usda_soil_order) %>% 
   summarise(max_14c = max(lyr_14c_msp),
             min_14c = min(lyr_14c_msp),
+            top_CORG = mean(CORG),
             max_CORG = max(CORG_msp),
             min_CORG = min(CORG_msp),
             MAP = mean(pro_BIO12_mmyr_WC2.1),
             MAT = mean(pro_BIO1_C_WC2.1)) %>% 
   ungroup()
-
+  
 model_data <- sum_data %>% 
   left_join(model_lm)
 
 # how to interpret log10: https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/
 # For x percent increase of independent variable (CORG), multiply the coefficient by log(1.x)
+
+model_data %>% 
+  ggplot(aes(x = estimate*log(1.01), y = top_CORG, 
+             fill = ClimateZone)) +
+  geom_point(size = 3, shape = 21) +
+  facet_wrap(~ClimateZone) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_x_continuous(expression(paste("Slope: ", Delta^14, "C ~ ", log[10], "SOC"))) +
+  scale_y_continuous("Surface SOC content [wt-%]") 
+ggsave(file = paste0("./Figure/ISRaD_msp_slope_SOC_climate_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
 
 p1 <- model_data %>% 
   ggplot(aes(y = estimate*log(1.01), x = (max_CORG-min_CORG)/max_CORG*100, 
@@ -194,7 +210,7 @@ p2
 # plotly::ggplotly(p2)
 
 ggarrange(p1,p2)
-ggsave(file = paste0("./Figure/ISRaD_msp_slope_SOC_climate_", Sys.Date(),
+ggsave(file = paste0("./Figure/ISRaD_msp_slope_relSOC_climate_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
 model_data %>% 
@@ -210,14 +226,25 @@ ggsave(file = paste0("./Figure/ISRaD_msp_slope_MAP_MAT_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 model_data %>% 
+  ggplot(aes(y = estimate*log(1.01), x = MAP)) +
+  geom_point(aes(fill = MAT), size = 3, shape = 21) +
+  # facet_wrap(~ClimateZone) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0), limits = c(-22,40)) +
+  scale_x_continuous("Mean annual precipitation [mm]", limits = c(0,3000)) +
+  scale_fill_viridis_c("MAT [°C]", option = "C")
+
+model_data %>% 
   ggplot(aes(x = ClimateZone, y = estimate*log(1.01))) +
   geom_boxplot(notch = TRUE, outlier.colour = NA) +
   geom_jitter(width = 0.2, height = 0, shape = 21, aes(fill = ClimateZone)) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
+        panel.background = element_blank(),
         legend.position = "none") +
-  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0),
-                     limits = c(-22,60)) +
+  scale_y_continuous(expression(paste("Slope: ", Delta^14, "C ~ ", log[10], "SOC")),
+                     expand = c(0,0), limits = c(-22,40)) +
   scale_x_discrete("")
 ggsave(file = paste0("./Figure/ISRaD_msp_slope_climate_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
