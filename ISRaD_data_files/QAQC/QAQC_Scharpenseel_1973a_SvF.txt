@@ -109,18 +109,18 @@ Summary statistics...
     pro_treatment : 43
     pro_usda_soil_order : 30
  flux tab...0 observations
- layer tab...201 observations
-    entry_name : 201
-    site_name : 201
-    pro_name : 201
-    lyr_name : 201
-    lyr_obs_date_y : 201
-    lyr_top : 201
-    lyr_bot : 201
+ layer tab...200 observations
+    entry_name : 200
+    site_name : 200
+    pro_name : 200
+    lyr_name : 200
+    lyr_obs_date_y : 200
+    lyr_top : 200
+    lyr_bot : 200
     lyr_hzn : 152
-    lyr_c_tot : 193
-    lyr_fraction_modern : 200
-    lyr_fraction_modern_sigma : 200
+    lyr_c_tot : 192
+    lyr_fraction_modern : 199
+    lyr_fraction_modern_sigma : 199
  interstitial tab...0 observations
  fraction tab...0 observations
  incubation tab...0 observations

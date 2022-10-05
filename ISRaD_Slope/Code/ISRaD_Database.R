@@ -182,31 +182,15 @@ lyr_data_fill <- lyr_data_clean %>%
   mutate(pro_usda_soil_order = ifelse((entry_name == "Dintwe_2022" &
                                          is.na(pro_usda_soil_order)), "Entisols",
                                       pro_usda_soil_order)) %>%
-  # Manually assign climate zone for Czimczik_Unpublished & Scharpensel
+  # Manually assign climate zone for Czimczik_Unpublished
   mutate(pro_KG_present_long = case_when(
     entry_name == "Czimczik_Unpublished" &
       is.na(pro_KG_present_long) ~ "Polar, tundra",
-    pro_name == "Molino Meloni:40.1,8.36" &
-      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
-    pro_name == "Nurallao:39.78,8.38" &
-      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
-    pro_name == "Riohlon St:32.2,34.8_1" &
-      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
-    pro_name == "Riohlon St:32.2,34.8_2" &
-      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
     TRUE ~ pro_KG_present_long
   )) %>% 
   mutate(pro_KG_present_short = case_when(
     entry_name == "Czimczik_Unpublished" &
       is.na(pro_KG_present_short) ~ "ET",
-    pro_name == "Molino Meloni:40.1,8.36" &
-      is.na(pro_KG_present_long) ~ "Csa",
-    pro_name == "Nurallao:39.78,8.38" &
-      is.na(pro_KG_present_long) ~ "Csa",
-    pro_name == "Riohlon St:32.2,34.8_1" &
-      is.na(pro_KG_present_long) ~ "Csa",
-    pro_name == "Riohlon St:32.2,34.8_2" &
-      is.na(pro_KG_present_long) ~ "Csa",
     TRUE ~ pro_KG_present_short
   ))
 
@@ -321,9 +305,25 @@ lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
     entry_name == "Leavitt_2007" & pro_name == "MES" ~ "Chernozems",
     entry_name == "Krull_2005" ~ "Vertisols",
     entry_name == "Schuur_2001" & pro_name == "Maui_5" ~ "Andosols",
+    pro_name == "Scalilli:37.81,13.13" ~ "Vertisols",
+    pro_name == "experimental farm 2:37.82,13.12" ~ "Vertisols",
+    pro_name == "Corleone:37.82,13.12" ~ "Vertisols",
+    pro_name == "experimental farm 1:37.82,13.12" ~ "Vertisols",
+    pro_name == "SW Sassari:40.57,8.43" ~ "Vertisols",
+    pro_name == "S Sassari:40.67,8.8" ~ "Vertisols",
+    pro_name == "Molino Meloni:40.1,8.36" ~ "Vertisols",
+    pro_name == "Tuvoi:39.3,8.55" ~ "Vertisols",
+    pro_name == "Monastir:39.38,8.41" ~ "Vertisols",
+    pro_name == "Nurallao:39.78,8.38" ~ "Vertisols",
+    pro_name == "site 273&274:42.17,25.67" ~ "Vertisols",
+    entry_name == "Scharpenseel_1973a" & pro_country == "Israel" ~ "Vertisols",
+    pro_name == "Kibbutz Ruchama:31.5, 34.7" ~ "Vertisols",
+    pro_name == "Kibbutz Ruchama:31.5, 34.63" ~ "Vertisols",
+    pro_name == "Kibbutz Ruchama:31.52, 34.62" ~ "Vertisols",
+    pro_name == "S Ashkalon:31.62, 34.58" ~ "Vertisols",
+    pro_name == "El Hamma:32.7,35.67" ~ "Vertisols",
     TRUE ~ pro_wrb_soil_order
   )) 
-
 
 lyr_data_fill_wrb %>% 
   count(entry_name, pro_name, pro_250m_wrb_soil_order,

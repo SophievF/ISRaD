@@ -1,6 +1,6 @@
 ISRaD Compilation Log 
  
- 2022-10-05 14:11:13 
+ 2022-10-05 17:48:14 
  - - - - - - - - - - - - - - - 
 
 
@@ -948,17 +948,17 @@ Summary statistics...
     flx_14c_sd : 35
     flx_fraction_modern : 1130
     flx_fraction_modern_sigma : 72
- layer tab...36236 observations
-    entry_name : 36236
-    site_name : 36236
-    pro_name : 36236
-    lyr_name : 36236
-    lyr_obs_date_y : 36236
+ layer tab...36235 observations
+    entry_name : 36235
+    site_name : 36235
+    pro_name : 36235
+    lyr_name : 36235
+    lyr_obs_date_y : 36235
     lyr_obs_date_m : 8855
     lyr_obs_date_d : 4343
     lyr_all_org_neg : 24903
-    lyr_top : 36236
-    lyr_bot : 36236
+    lyr_top : 36235
+    lyr_bot : 36235
     lyr_hzn : 24872
     lyr_comp : 1441
     lyr_igsn : 8
@@ -991,7 +991,7 @@ Summary statistics...
     lyr_bs : 374
     lyr_c_inorg : 1578
     lyr_c_org : 4381
-    lyr_c_tot : 9513
+    lyr_c_tot : 9512
     lyr_soc : 1948
     lyr_soc_sigma : 297
     lyr_n_tot : 7842
@@ -1006,8 +1006,8 @@ Summary statistics...
     lyr_14c : 3997
     lyr_14c_sigma : 2753
     lyr_14c_sd : 89
-    lyr_fraction_modern : 6059
-    lyr_fraction_modern_sigma : 5413
+    lyr_fraction_modern : 6058
+    lyr_fraction_modern_sigma : 5412
     lyr_fraction_modern_sd : 9
     lyr_mbc_method : 185
     lyr_raw_mbc : 14

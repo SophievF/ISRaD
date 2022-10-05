@@ -8,7 +8,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-04"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-05"))
 
 lyr_all %>% 
   count(entry_name)
@@ -61,7 +61,7 @@ summary(lyr_mpspline$lyr_14c)
 summary(lyr_mpspline$ClimateZone)
 
 lyr_mpspline %>% 
-  group_by(ClimateZone) %>% 
+  # group_by(ClimateZone) %>% 
   summarise(n_studies = n_distinct(entry_name),
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
@@ -222,7 +222,6 @@ mspline_14c_c_all %>%
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_raw_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
-
 climate_all <- mspline_14c_c_all %>%
   group_by(ClimateZone, UD) %>% 
   mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
@@ -289,7 +288,7 @@ p_climate_all <- climate_all %>%
                                         size = 0.3),
         panel.grid.minor = element_line(color = "grey", linetype = "dotted",
                                         size = 0.2),
-        legend.position = c(0.2,0.3),
+        legend.position = c(0.1,0.2),
         legend.background = element_blank(),
         panel.spacing.x = unit(2, "lines")) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0)) +
@@ -298,7 +297,7 @@ p_climate_all <- climate_all %>%
 p_climate_all +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = ClimateZone),
                  alpha = 0.4) +
-  geom_path()
+  geom_path(size = 1)
 
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_avg_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
