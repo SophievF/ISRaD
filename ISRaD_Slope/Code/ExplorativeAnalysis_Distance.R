@@ -8,7 +8,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-09-22"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-05"))
 
 lyr_all %>% 
   count(entry_name)
@@ -36,7 +36,10 @@ lyr_mpspline <- lyr_all %>%
     str_detect(pro_KG_present_long, "Arid") ~ "arid",
   )) %>% 
   #remove for now: need to fix depth
-  filter(entry_name != "Fernandez_1993a")
+  filter(entry_name != "Fernandez_1993a") %>% 
+  filter(lyr_name != "Amelsburen:51.85,7.63_5_0") %>% 
+  filter(lyr_name != "Dubnik&Pleven:43.48,24.18_100_150") %>% 
+  filter(lyr_name != "experimental farm 1:37.82,13.12_0_25")
 
 summary(lyr_mpspline$CORG)
 summary(lyr_mpspline$lyr_14c)
@@ -96,12 +99,6 @@ mspline_14c_c_all %>%
   ungroup(UD) %>% 
   mutate(n_rel = n * 100 / max(n)) 
   
-mspline_14c_c_all %>% 
-  dplyr::select(id, UD, lyr_14c_msp) %>% 
-  pivot_wider(names_from =  id, values_from = lyr_14c_msp) %>% 
-  dplyr::select(-UD) %>% 
-  data.matrix() %>% 
-  dist() 
 
 ### Slope analysis
 library(lme4)
@@ -139,6 +136,7 @@ sum_data <- mspline_14c_c_all %>%
   summarise(max_14c = max(lyr_14c_msp),
             min_14c = min(lyr_14c_msp),
             top_CORG = mean(CORG),
+            top_alox = mean(lyr_al_ox, na.rm = TRUE),
             max_CORG = max(CORG_msp),
             min_CORG = min(CORG_msp),
             MAP = mean(pro_BIO12_mmyr_WC2.1),
@@ -162,6 +160,20 @@ model_data %>%
   scale_x_continuous(expression(paste("Slope: ", Delta^14, "C ~ ", log[10], "SOC"))) +
   scale_y_continuous("Surface SOC content [wt-%]") 
 ggsave(file = paste0("./Figure/ISRaD_msp_slope_SOC_climate_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+model_data %>% 
+  ggplot(aes(x = estimate*log(1.01), y = top_alox, 
+             fill = ClimateZone)) +
+  geom_point(size = 3, shape = 21) +
+  facet_wrap(~ClimateZone) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_x_continuous(expression(paste("Slope: ", Delta^14, "C ~ ", log[10], "SOC")),
+                     limits = c(-5,30)) +
+  scale_y_continuous()
+ggsave(file = paste0("./Figure/ISRaD_msp_slope_alox_climate_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
 p1 <- model_data %>% 
@@ -225,21 +237,12 @@ model_data %>%
 ggsave(file = paste0("./Figure/ISRaD_msp_slope_MAP_MAT_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
-model_data %>% 
-  ggplot(aes(y = estimate*log(1.01), x = MAP)) +
-  geom_point(aes(fill = MAT), size = 3, shape = 21) +
-  # facet_wrap(~ClimateZone) +
-  theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black")) +
-  scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0), limits = c(-22,40)) +
-  scale_x_continuous("Mean annual precipitation [mm]", limits = c(0,3000)) +
-  scale_fill_viridis_c("MAT [°C]", option = "C")
 
 model_data %>% 
   ggplot(aes(x = ClimateZone, y = estimate*log(1.01))) +
   geom_boxplot(notch = TRUE, outlier.colour = NA) +
   geom_jitter(width = 0.2, height = 0, shape = 21, aes(fill = ClimateZone)) +
-  theme_bw(base_size = 16) +
+  theme_bw(base_size = 13) +
   theme(axis.text = element_text(color = "black"),
         panel.background = element_blank(),
         legend.position = "none") +
@@ -247,7 +250,7 @@ model_data %>%
                      expand = c(0,0), limits = c(-22,40)) +
   scale_x_discrete("")
 ggsave(file = paste0("./Figure/ISRaD_msp_slope_climate_", Sys.Date(),
-                     ".jpeg"), width = 12, height = 6)
+                     ".jpeg"), width = 4, height = 3.5)
 
 
 model_data %>% 
@@ -260,7 +263,7 @@ model_data %>%
         axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "none") +
   scale_y_continuous("Slope: lyr_14c ~ log10(CORG)", expand = c(0,0),
-                     limits = c(-22,60)) +
+                     limits = c(-22,40)) +
   scale_x_discrete("")
 ggsave(file = paste0("./Figure/ISRaD_msp_slope_soiltype_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)

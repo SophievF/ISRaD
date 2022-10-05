@@ -147,7 +147,7 @@ Summary statistics...
     lyr_clay_tot_psa : 6
     lyr_texture_class : 6
     lyr_ph : 6
-    lyr_c_tot : 20
+    lyr_c_tot : 21
     lyr_n_tot : 21
     lyr_15n : 21
     lyr_13c : 20

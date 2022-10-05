@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-10-01")
+ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-10-05")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -45,15 +45,11 @@ lyr_data <- lyr_data_all %>%
   drop_na(lyr_14c) %>% 
   drop_na(lyr_c_org_filled) %>% 
   rename(CORG = lyr_c_org_filled) %>% 
-  # mutate(CORG = case_when(
-  #   is.na(lyr_c_org) ~ lyr_c_tot,
-  #   TRUE ~ lyr_c_org
-  # )) %>%
-  # drop_na(CORG) %>% 
-  filter(lyr_top >= 0 &
-           lyr_bot >= 0 &
-           pro_land_cover != "wetland" &
-           is.na(pro_peatland)) %>% 
+  filter(lyr_top >= 0,
+           lyr_bot > 0) %>% 
+  filter(pro_land_cover != "wetland"|
+           is.na(pro_land_cover)) %>% 
+  filter(is.na(pro_peatland)) %>% 
   filter(lyr_top != "Inf",
          lyr_bot != "Inf") %>% 
   unite("id", c(entry_name, site_name, pro_name), remove = FALSE) %>% 
@@ -92,6 +88,8 @@ lyr_data %>%
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
 
+lyr_data %>% 
+  count(entry_name)
 
 #Check for data that has same depth value for same id
 lyr_data %>%
@@ -129,6 +127,9 @@ lyr_data_clean %>%
             n_profiles = n_distinct(id))
 
 lyr_data_clean %>% 
+  count(entry_name)
+
+lyr_data_clean %>% 
   ggplot(aes(x = depth, y = lyr_14c, group = entry_name)) + 
   geom_point(size = 3, shape = 21) +
   theme_bw(base_size = 16)
@@ -142,6 +143,10 @@ lyr_data_clean %>%
   count(pro_KG_present_long)
 lyr_data_clean %>% 
   count(pro_KG_present_short)
+
+lyr_data_clean %>%
+  filter(is.na(pro_KG_present_long)) %>% 
+  count(entry_name, pro_name, pro_country)
 
 summary(lyr_data_clean$pro_BIO12_mmyr_WC2.1)
 
@@ -162,6 +167,8 @@ lyr_data_fill <- lyr_data_clean %>%
          pro_usda_soil_order = ifelse(grepl("Kastanozem|Chernozem|Phaeozem", pro_soil_taxon), "Mollisols",
                                       pro_usda_soil_order),
          pro_usda_soil_order = ifelse(grepl("luvisol|Luvisol", pro_soil_taxon), "Alfisols",
+                                      pro_usda_soil_order),
+         pro_usda_soil_order = ifelse(grepl("Arenosol", pro_soil_taxon), "Entisols",
                                       pro_usda_soil_order)) %>%
   # Gap fill with global data product
   mutate(pro_usda_soil_order = ifelse(is.na(pro_usda_soil_order),
@@ -175,13 +182,31 @@ lyr_data_fill <- lyr_data_clean %>%
   mutate(pro_usda_soil_order = ifelse((entry_name == "Dintwe_2022" &
                                          is.na(pro_usda_soil_order)), "Entisols",
                                       pro_usda_soil_order)) %>%
-  # Manually assign climate zone for Czimczik_Unpublished
+  # Manually assign climate zone for Czimczik_Unpublished & Scharpensel
   mutate(pro_KG_present_long = case_when(
-    is.na(pro_KG_present_long) ~ "Polar, tundra",
+    entry_name == "Czimczik_Unpublished" &
+      is.na(pro_KG_present_long) ~ "Polar, tundra",
+    pro_name == "Molino Meloni:40.1,8.36" &
+      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
+    pro_name == "Nurallao:39.78,8.38" &
+      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
+    pro_name == "Riohlon St:32.2,34.8_1" &
+      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
+    pro_name == "Riohlon St:32.2,34.8_2" &
+      is.na(pro_KG_present_long) ~ "Temperate, dry summer, hot summer",
     TRUE ~ pro_KG_present_long
   )) %>% 
   mutate(pro_KG_present_short = case_when(
-    is.na(pro_KG_present_short) ~ "ET",
+    entry_name == "Czimczik_Unpublished" &
+      is.na(pro_KG_present_short) ~ "ET",
+    pro_name == "Molino Meloni:40.1,8.36" &
+      is.na(pro_KG_present_long) ~ "Csa",
+    pro_name == "Nurallao:39.78,8.38" &
+      is.na(pro_KG_present_long) ~ "Csa",
+    pro_name == "Riohlon St:32.2,34.8_1" &
+      is.na(pro_KG_present_long) ~ "Csa",
+    pro_name == "Riohlon St:32.2,34.8_2" &
+      is.na(pro_KG_present_long) ~ "Csa",
     TRUE ~ pro_KG_present_short
   ))
 
@@ -268,7 +293,9 @@ lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
                                                                                                                       "Stagnosols",
                                                                                                                       ifelse(grepl("Alisols|Alisol|alisol", pro_soil_taxon), 
                                                                                                                              "Alisols",
-                                                                                                                             pro_250m_wrb_soil_order)))))))))))))))))) %>%
+                                                                                                                             ifelse(grepl("Arenosols|Arenosol", pro_soil_taxon),
+                                                                                                                             "Arenosols",
+                                                                                                                             pro_250m_wrb_soil_order))))))))))))))))))) %>%
   #Manually assignment based on expert knowledge
   mutate(pro_wrb_soil_order = case_when(
     entry_name == "Chiti_2010" ~ "Ferralsols",
