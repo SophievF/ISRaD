@@ -255,7 +255,8 @@ ggsave(file = paste0("./Figure/ISRaD_msp_slope_climate_", Sys.Date(),
 
 model_data %>% 
   filter(pro_usda_soil_order != "Aridisols") %>% 
-  ggplot(aes(x = pro_usda_soil_order, y = estimate*log(1.01))) +
+  ggplot(aes(x = reorder(pro_usda_soil_order, estimate*log(1.01), median), 
+             y = estimate*log(1.01))) +
   geom_boxplot(notch = TRUE, outlier.colour = NA) +
   geom_jitter(width = 0.2, height = 0, shape = 21, aes(fill = pro_usda_soil_order)) +
   theme_bw(base_size = 16) +

@@ -16,9 +16,15 @@ lyr_all %>%
 names(lyr_all)
 
 lyr_mpspline <- lyr_all %>% 
-  #reclassify soil type Schuur_2001: all Andisols
+ filter(lyr_obs_date_y > 1959) %>% 
+  group_by(id) %>%
+  #Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  arrange(depth, .by_group = TRUE) %>% 
+  ungroup() %>%
+  # #reclassify soil type Schuur_2001: all Andisols
   # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
-  #                                      entry_name == "Schuur_2001" & 
+  #                                      entry_name == "Schuur_2001" &
   #                                        pro_usda_soil_order == "Inceptisols",
   #                                      "Andisols")) %>%
   # #reclassify soil type Guillet_1988: all Andisols
@@ -32,13 +38,7 @@ lyr_mpspline <- lyr_all %>%
   # #reclassify soil type Kramer_2012: all Andisols
   # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
   #                                      entry_name == "Kramer_2012",
-  #                                      "Andisols")) %>%
-  filter(lyr_obs_date_y > 1959) %>% 
-  group_by(id) %>%
-  #Filter for studies that have more than 2 depth layers
-  filter(n() > 2) %>%
-  arrange(depth, .by_group = TRUE) %>% 
-  ungroup() %>% 
+  #                                      "Andisols")) %>% 
   mutate(ClimateZone = case_when(
     entry_name == "Gentsch_2018" ~ "polar",
     pro_usda_soil_order == "Gelisols" ~ "polar",
@@ -92,7 +92,8 @@ mspline_14c_c_all <- mspline_14c_c %>%
                    by = "id") %>% 
   group_by(id) %>% 
   arrange(UD) %>% 
-  ungroup()
+  ungroup() 
+  
 
 mspline_14c_c_all %>% 
   group_by(ClimateZone) %>%
@@ -182,7 +183,7 @@ mx_sum <- mspline_14c_c_all %>%
   mutate(n = n()) %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n)) %>%
-  filter(n > 4 & n_rel > 60) %>%
+  filter(n > 4 & n_rel > 33) %>%
   summarise(n_max = max(UD))
 
 mspline_14c_c_all %>% 
@@ -237,7 +238,7 @@ climate_all <- mspline_14c_c_all %>%
   mutate(n_rel = n * 100 / max(n))
 
 cd1 <- climate_all %>% 
-  filter(n > 4 & n_rel > 60) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   ggplot(aes(y = UD)) +
   geom_line(aes(x = median_14c, color = ClimateZone), size = 0.7, orientation = "y") +
   geom_ribbon(aes(xmin = lci_14c, xmax = uci_14c, fill = ClimateZone, 
@@ -258,7 +259,7 @@ cd1 <- climate_all %>%
                   breaks = seq(0,100,25))
 
 cd2 <- climate_all %>% 
-  filter(n > 4 & n_rel > 60) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   ggplot(aes(y = UD)) +
   geom_line(aes(x = n, color = ClimateZone), orientation = "y") +
   theme_classic(base_size = 16) +
@@ -278,7 +279,7 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_depth_climate_avg_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 p_climate_all <- climate_all %>%
-  filter(n > 4 & n_rel > 60)  %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   ggplot(aes(x = median_c, y = median_14c, color = ClimateZone)) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, color = ClimateZone),
                 alpha = 0.3) +
@@ -307,7 +308,7 @@ mspline_14c_c_all %>%
   mutate(n = n()) %>%
   ungroup(UD) %>% 
   mutate(n_rel = n * 100 / max(n)) %>% 
-  filter(n > 4 & n_rel > 60) %>% 
+  filter(n > 4 & n_rel > 30) %>% 
   summarise(n_studies = n_distinct(entry_name),
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
@@ -352,7 +353,7 @@ max_depth <- mspline_14c_c_all %>%
   mutate(n = n()) %>%
   ungroup(UD) %>% 
   mutate(n_rel = n * 100 / max(n)) %>% 
-  filter(n > 4 & n_rel > 60) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   summarise(max_UD = max(UD))
 
 fig_int <- plotly::ggplotly(
@@ -379,7 +380,7 @@ fig_int <- plotly::ggplotly(
                        limits = c(100,0))
 )
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_depth_soiltype_raw_", Sys.Date(),
-                     ".jpeg"), width = 11, height = 6)
+                     ".jpeg"), width = 12, height = 6)
 
 htmlwidgets::saveWidget(
   widget = fig_int, #the plotly object
@@ -405,8 +406,7 @@ soil_all <- mspline_14c_c_all %>%
 
 
 cd1 <- soil_all %>% 
-  filter(pro_usda_soil_order == "Vertisols"| 
-           n > 4 & n_rel > 60) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   ggplot(aes(y = UD)) +
   geom_line(aes(x = median_14c, color = pro_usda_soil_order), size = 0.7, orientation = "y") +
   geom_ribbon(aes(xmin = lci_14c, xmax = uci_14c, fill = pro_usda_soil_order, 
@@ -428,8 +428,7 @@ cd1 <- soil_all %>%
                   breaks = seq(0,100,25))
 
 cd2 <- soil_all %>% 
-  filter(pro_usda_soil_order == "Vertisols"| 
-           n > 4 & n_rel > 60) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   ggplot(aes(y = UD)) +
   geom_line(aes(x = n, color = pro_usda_soil_order), orientation = "y") +
   theme_classic(base_size = 16) +
@@ -439,8 +438,8 @@ cd2 <- soil_all %>%
         panel.grid.minor = element_line(color = "grey", linetype = "dotted",
                                         size = 0.2),
         legend.position = "none") +
-  scale_x_continuous("Number of profiles", expand = c(0,0), limits = c(0,110),
-                     position = "top", breaks = seq(0,100,50)) +
+  scale_x_continuous("Number of profiles", expand = c(0,0), limits = c(0,80),
+                     position = "top", breaks = seq(0,75,25)) +
   scale_y_reverse("", limits = c(100,0), expand = c(0,0),
                   breaks = seq(0,100,25))
 
@@ -449,8 +448,7 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_depth_soiltype_avg_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
 p_soil_all <- soil_all %>%
-  filter(pro_usda_soil_order == "Vertisols"| 
-           n > 4 & n_rel > 60)  %>% 
+  filter(n > 4 & n_rel > 33)  %>% 
   ggplot(aes(x = median_c, y = median_14c, color = pro_usda_soil_order)) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, color = pro_usda_soil_order),
                 alpha = 0.3) +
@@ -469,14 +467,13 @@ p_soil_all <- soil_all %>%
 p_soil_all +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = pro_usda_soil_order),
                  alpha = 0.4) +
-  geom_path()
+  geom_path(size = 1)
 
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_soiltype_avg_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
 soil_all %>%
-  filter(pro_usda_soil_order == "Vertisols"| 
-           n > 4 & n_rel > 60)  %>% 
+  filter(n > 4 & n_rel > 33)  %>% 
   filter(pro_usda_soil_order == "Andisols"|
            pro_usda_soil_order == "Gelisols"|
            pro_usda_soil_order == "Vertisols") %>% 
@@ -485,7 +482,7 @@ soil_all %>%
                 alpha = 0.4) +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = pro_usda_soil_order),
                  alpha = 0.4) +
-  geom_path() +
+  geom_path(size = 1) +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.major = element_line(color = "grey", linetype = "dotted",
@@ -499,12 +496,10 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_soiltype_AndGelVer_", Sys.Date(
                      ".jpeg"), width = 12, height = 6)
 
 soil_all %>%
-  filter(n > 4 & n_rel > 60)  %>% 
+  filter(n > 4 & n_rel > 33)  %>% 
   filter(pro_usda_soil_order != "Andisols",
          pro_usda_soil_order != "Gelisols",
-         pro_usda_soil_order != "Vertisols",
-         pro_usda_soil_order != "Entisols",
-         pro_usda_soil_order != "Spodosols") %>% 
+         pro_usda_soil_order != "Vertisols") %>% 
   ggplot(aes(x = median_c, y = median_14c, color = pro_usda_soil_order)) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, color = pro_usda_soil_order),
                 alpha = 0.4) +
@@ -521,7 +516,7 @@ soil_all %>%
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0)) +
   scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10")
 
-ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_soiltype_AlfIncepMolOxiUlti_", Sys.Date(),
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_soiltype_AlfEntIncMolOxiSpoUlt_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
 mspline_14c_c_all %>% 
@@ -551,7 +546,7 @@ soil_climate <- mspline_14c_c_all %>%
 
 
 soil_climate %>%
-  filter(n > 4 & n_rel > 60)  %>% 
+  filter(n > 4 & n_rel > 33)  %>% 
   filter(ClimateZone == "cold"|
            ClimateZone == "temperate") %>% 
   filter(pro_usda_soil_order == "Entisols") %>%
@@ -560,7 +555,7 @@ soil_climate %>%
                 alpha = 0.4) +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = ClimateZone),
                  alpha = 0.4) +
-  geom_path() +
+  geom_path(size = 1) +
   facet_wrap(~pro_usda_soil_order) +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
@@ -601,13 +596,13 @@ mspline_14c_c_all %>%
   distinct(median_14c, .keep_all = TRUE) %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n)) %>% 
-  filter(n > 4 & n_rel > 60) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   ggplot(aes(x = median_c, y = median_14c, color = ClimateZone)) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, color = ClimateZone),
                 alpha = 0.4) +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = ClimateZone),
                  alpha = 0.4) +
-  geom_path() +
+  geom_path(size = 1) +
   # facet_wrap(~pro_usda_soil_order) +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
@@ -622,18 +617,18 @@ ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_TropTemp_IncepOxUlt_avg_", Sys.
                      ".jpeg"), width = 12, height = 6)
 
 soil_climate %>%
-  filter(n > 4 & n_rel > 60)  %>% 
+  filter(n > 4 & n_rel > 33)  %>% 
   filter(ClimateZone == "tropical"|
            ClimateZone == "temperate") %>% 
   filter(pro_usda_soil_order == "Oxisols"|
            pro_usda_soil_order == "Ultisols"|
            pro_usda_soil_order == "Inceptisols") %>%
-  ggplot(aes(x = UD, y = median_14c, color = ClimateZone)) +
+  ggplot(aes(x = median_c, y = median_14c, color = ClimateZone)) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, color = ClimateZone),
                 alpha = 0.4) +
-  # geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = ClimateZone),
-  #                alpha = 0.4) +
-  geom_path() +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = ClimateZone),
+                 alpha = 0.4) +
+  geom_path(size = 1) +
   facet_wrap(~pro_usda_soil_order) +
   theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
