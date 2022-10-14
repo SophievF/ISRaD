@@ -519,6 +519,38 @@ soil_all %>%
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_soiltype_AlfEntIncMolOxiSpoUlt_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
+
+soil_red <- soil_all %>%
+  filter(n > 4 & n_rel > 33)  %>% 
+  filter(pro_usda_soil_order != "Andisols",
+         pro_usda_soil_order != "Gelisols",
+         pro_usda_soil_order != "Vertisols",
+         pro_usda_soil_order != "Oxisols",
+         pro_usda_soil_order != "Ultisols")
+
+soil_red$pro_usda_soil_order <- factor(soil_red$pro_usda_soil_order,
+                                       levels = c("Entisols", "Inceptisols", "Spodosols",
+                                                  "Alfisols", "Mollisols"))
+
+soil_red %>%
+  ggplot(aes(x = median_c, y = median_14c, color = pro_usda_soil_order)) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, color = pro_usda_soil_order),
+                alpha = 0.4) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, color = pro_usda_soil_order),
+                 alpha = 0.4) +
+  geom_path(size = 1) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.3),
+        panel.grid.minor = element_line(color = "grey", linetype = "dotted",
+                                        size = 0.2),
+        panel.spacing.x = unit(2, "lines")) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0)) +
+  scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10")
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_soiltype_AlfEntIncMolSpo_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
 mspline_14c_c_all %>% 
   group_by(pro_usda_soil_order, UD) %>% 
   mutate(n = n()) %>%
