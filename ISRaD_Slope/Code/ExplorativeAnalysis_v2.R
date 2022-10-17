@@ -10,7 +10,7 @@ library(RColorBrewer)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-05"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-17"))
 
 lyr_all %>% 
   summarise(n_studies = n_distinct(entry_name),
@@ -52,6 +52,15 @@ lyr_data %>%
             n_profiles = n_distinct(id))
 
 names(lyr_data)
+
+lyr_data$ClimateZone <- factor(lyr_data$ClimateZone,
+                               levels = c("polar", "cold", "arid",
+                                          "temperate", "tropical"))
+
+lyr_data$ClimateZoneAnd <- factor(lyr_data$ClimateZoneAnd,
+                                  levels = c("polar", "cold", "arid",
+                                             "temperate", "tropical",
+                                             "andisols"))
 
 ## Check climate
 lyr_data %>% 
@@ -212,10 +221,9 @@ lyr_data %>%
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
 
-## Raw data points: SOC vs 14C
-lyr_data %>% 
-  filter(depth < 101) %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) + 
+## Raw data points (from mpsline): SOC vs 14C
+mspline_14c_c_all %>% 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
   geom_hex(binwidth = c(0.1,50)) +
   facet_wrap(~ClimateZone) +
   theme_bw(base_size = 16) +
@@ -223,16 +231,15 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.005,60)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1, limits = c(0,25)) +
+  scale_fill_viridis_c(direction = -1, limits = c(0,260)) +
   coord_cartesian(ylim = c(-1000,400)) 
 
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
-lyr_data %>% 
-  filter(depth < 101) %>% 
+mspline_14c_c_all %>% 
   filter(ClimateZone == "polar") %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) + 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
   geom_hex(binwidth = c(0.1,50)) +
   facet_wrap(~ClimateZone) +
   theme_bw(base_size = 14) +
@@ -245,15 +252,14 @@ lyr_data %>%
   scale_x_continuous("", trans = "log10", limits = c(0.008,57)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1, limits = c(0,25)) +
+  scale_fill_viridis_c(direction = -1,limits = c(0,260)) +
   coord_cartesian(ylim = c(-1000,400)) 
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_polar_", Sys.Date(),
                      ".jpeg"), width = 4, height = 3.9)
 
-lyr_data %>% 
-  filter(depth < 101) %>% 
+mspline_14c_c_all %>% 
   filter(ClimateZone == "cold") %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) + 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
   geom_hex(binwidth = c(0.1,50)) +
   facet_wrap(~ClimateZone) +
   theme_bw(base_size = 14) +
@@ -266,15 +272,14 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.008,57)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1, limits = c(0,25)) +
+  scale_fill_viridis_c(direction = -1, limits = c(0,260)) +
   coord_cartesian(ylim = c(-1000,400)) 
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_cold_", Sys.Date(),
                      ".jpeg"), width = 4, height = 3.9)
 
-lyr_data %>% 
-  filter(depth < 101) %>% 
+mspline_14c_c_all %>%
   filter(ClimateZone == "arid") %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) + 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
   geom_hex(binwidth = c(0.1,50)) +
   facet_wrap(~ClimateZone) +
   theme_bw(base_size = 14) +
@@ -287,15 +292,14 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.008,57)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1, limits = c(0,25)) +
+  scale_fill_viridis_c(direction = -1, limits = c(0,260)) +
   coord_cartesian(ylim = c(-1000,400)) 
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_arid_", Sys.Date(),
                      ".jpeg"), width = 4, height = 3.9)
 
-lyr_data %>% 
-  filter(depth < 101) %>% 
+mspline_14c_c_all %>%
   filter(ClimateZone == "temperate") %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) + 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
   geom_hex(binwidth = c(0.1,50)) +
   facet_wrap(~ClimateZone) +
   theme_bw(base_size = 14) +
@@ -307,15 +311,14 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.008,57)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1, limits = c(0,25), breaks = c(0,10,20)) +
+  scale_fill_viridis_c(direction = -1, limits = c(0,260)) +
   coord_cartesian(ylim = c(-1000,400)) 
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_temp_", Sys.Date(),
                      ".jpeg"), width = 5, height = 3.9)
 
-lyr_data %>% 
-  filter(depth < 101) %>% 
+mspline_14c_c_all %>% 
   filter(ClimateZone == "tropical") %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) + 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
   geom_hex(binwidth = c(0.1,50)) +
   facet_wrap(~ClimateZone) +
   theme_bw(base_size = 14) +
@@ -328,13 +331,13 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.008,57)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1, limits = c(0,25)) +
+  scale_fill_viridis_c(direction = -1, limits = c(0,260)) +
   coord_cartesian(ylim = c(-1000,400)) 
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_trop_", Sys.Date(),
                      ".jpeg"), width = 4, height = 3.9)
 
 ## Raw data + averaged data: SOC and climate
-climate_all <- mspline_14c_c_all %>%
+climate_all_and <- mspline_14c_c_all %>%
   group_by(ClimateZoneAnd, UD) %>% 
   mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
          lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
@@ -348,167 +351,229 @@ climate_all <- mspline_14c_c_all %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n))
 
-ggplot() + 
-  geom_hex(data = lyr_data %>% 
-             filter(depth < 101), 
-           aes(x = CORG, y = lyr_14c), alpha = 0.7) +
-  geom_path(data = climate_all %>% 
+climate_all <- mspline_14c_c_all %>%
+  group_by(ClimateZone, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n))
+
+mspline_14c_c_all %>% 
+  ggplot() + 
+  geom_hex(aes(x = CORG_msp, y = lyr_14c_msp), alpha = 0.7) +
+  geom_path(data = climate_all %>%
               filter(n > 4 & n_rel > 33),
-            aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 2) +
-  geom_errorbar(data = climate_all %>% 
+            aes(x = median_c, y = median_14c, color = ClimateZone), size = 2) +
+  geom_errorbar(data = climate_all %>%
                   filter(n > 4 & n_rel > 33),
-                aes(ymin = lci_14c, ymax = uci_14c, x = median_c, color = ClimateZoneAnd), 
+                aes(ymin = lci_14c, ymax = uci_14c, x = median_c, color = ClimateZone),
                 alpha = 0.3) +
-  geom_errorbarh(data = climate_all %>% 
+  geom_errorbarh(data = climate_all %>%
                   filter(n > 4 & n_rel > 33),
-                 aes(xmin = lci_c, xmax = uci_c, y = median_14c, color = ClimateZoneAnd), 
+                 aes(xmin = lci_c, xmax = uci_c, y = median_14c, color = ClimateZone),
                  alpha = 0.3) +
-  facet_wrap(~ClimateZoneAnd) +
+  facet_wrap(~ClimateZone) +
   theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black")) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = c(0.8,0.2), 
+        legend.box = "horizontal") +
   scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.005,60)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
   scale_fill_viridis_c(direction = -1) +
   coord_cartesian(ylim = c(-1000,400)) 
 
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_fit", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
 
-### Add HLZ data
-library(sf)
-library(tmap)
-HLZ_directory <- "D:/Sophie/PhD/AfSIS_GlobalData/HLZ/holdrid/holdrid.shp"
+climate_all_and$ClimateZoneAnd <- factor(climate_all_and$ClimateZoneAnd,
+                                  levels = c("andisols", "polar", "cold", 
+                                             "temperate", "arid",
+                                             "tropical"))
 
-HLZ <- sf::st_read(HLZ_directory)
-st_crs(HLZ) <- 4326
-
-lyr_data_sf <- sf::st_as_sf(lyr_data, 
-                            coords = c("pro_long", "pro_lat"), 
-                            crs = 4326)
-
-tmap_mode("view")
-tm_shape(HLZ, projection = 4326) +
-  tm_polygons(col = "DESC") +
-  tm_shape(lyr_data_sf) +
-  tm_dots(popup.vars = "id")
-
-lyr_data_HLZ_sf <- sf::st_join(lyr_data_sf, HLZ, 
-                               left = TRUE)
-
-lyr_data_HLZ_NA <- lyr_data_HLZ_sf %>% 
-  tibble() %>% 
-  dplyr::select(-c(geometry, AREA:FREQUENCY, SYMBOL)) %>% 
-  rename(HLZ_Zone = DESC)
-
-names(lyr_data_HLZ_NA)
-
-lyr_data_HLZ_NA %>% 
-  filter(is.na(HLZ_Zone)) %>% 
-  count(id) %>% view()
-
-# lyr_data_HLZ_NA %>% 
-#   filter(entry_name == "Kramer_2012") %>% 
-#   count(id, HLZ_Zone)
-# 
-# lyr_data_HLZ_NA %>% 
-#   filter(entry_name == "Torn_1997") %>% 
-#   filter(is.na(HLZ_Zone)) %>% 
-#   count(id)
-# 
-# tmap_mode("view")
-# tm_shape(HLZ, projection = 4326) +
-#   tm_polygons(col = "DESC") +
-#   tm_shape(lyr_data_sf[(lyr_data_sf$entry_name == "Crow_2015"|
-#                           lyr_data_sf$entry_name == "Cusack_2012"|
-#                           lyr_data_sf$entry_name == "Kramer_2012"|
-#                           lyr_data_sf$entry_name == "Torn_1997"),]) +
-#   tm_dots(popup.vars = "id")
-
-#Manually assign missing HLZ
-lyr_data_HLZ <- lyr_data_HLZ_NA %>% 
-  mutate(HLZ_Zone = ifelse(entry_name == "Basile_Doelsch_2005", 
-                            "Subtropical dry forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Heckman_2018_CA_Mollisol_SCT2", 
-                           "Warm temperate dry forest", HLZ_Zone)) %>%
-  mutate(HLZ_Zone = ifelse(id == "Heckman_2018_MI_Spodosol_MiB1", 
-                           "Cool temperate moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Lassey_1996_Westland_Hokotika", 
-                           "Cool temperate wet forest", HLZ_Zone)) %>% 
-  #Could also be "Cool temperate wet forest"
-  mutate(HLZ_Zone = ifelse(id == "Lassey_1996_Hawera_Whareroa road", 
-                           "Warm temperate moist forest", HLZ_Zone)) %>%
-  #Could also be "Cool temperate steppe"
-  mutate(HLZ_Zone = ifelse(grepl("Lawrence_2021_Santa Cruz_SC", id),
-                           "Warm temperate dry forest", HLZ_Zone)) %>%
-  mutate(HLZ_Zone = ifelse(grepl("McFarlane_2013_MI-Coarse UMBS", id),
-                           "Cool temperate moist forest", HLZ_Zone)) %>%
-  mutate(HLZ_Zone = ifelse(grepl("Sanaiotti_2002_Alter do Chão_Alter do Chão", id),
-                           "Subtropical moist forest", HLZ_Zone)) %>%
-  #Could also be "Subtropical moist forest" or "Subtropical dry forest"
-  mutate(HLZ_Zone = ifelse(entry_name == "Schwartz_1992", 
-                           "Tropical dry forest", HLZ_Zone)) %>%
-  #Most of Hawaii has missing data
-  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_AND_EUC_Composite", id),
-                           "Warm temperate wet forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_MOL_AG_Composite", id), 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_OX_AG_Composite", id), 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(entry_name == "Cusack_2012", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(grepl("Grant_2022_Kohala", id), 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Kramer_2012_Pololu_1", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Amalu-precipitation_Amalu-precipitation_profile_1", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kohala (150ky)_Kohala (150ky)_profile_1", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kokee (4.1my)_Kokee (4.1my)_profile_1", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kolekole (1.4my)_Kolekole (1.4my)_profile_1", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kohala_Kohala_150", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kokee, Kauai_Kokee_Kauai_4100", 
-                           "Subtropical moist forest", HLZ_Zone)) %>% 
-  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kolekole, Molokai_Kolekole_Molokai_1400", 
-                           "Subtropical moist forest", HLZ_Zone)) 
-
-lyr_data_HLZ %>% 
-  filter(is.na(HLZ_Zone)) %>% 
-  count(id) %>% view()
-
-lyr_data_HLZ %>% 
-  count(HLZ_Zone)
-
-lyr_data_HLZ %>% 
-  filter(depth <= 200) %>%
-  ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
-  geom_point(shape = 21, size = 4, alpha = 0.7) +
-  facet_wrap(~HLZ_Zone) +
-  theme_bw(base_size = 12) +
+climate_all_and %>% 
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = ClimateZoneAnd), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = ClimateZoneAnd), alpha = 0.3) +
+  theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
-        panel.grid.minor = element_blank(),
-        strip.background = element_rect(fill =  NA)) +
-  scale_x_continuous("Depth [cm]") +
-  scale_y_continuous("Delta14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
-  guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
-                               ticks.linewidth = 2))
+        legend.position = c(0.15,0.25)) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_color_discrete("Climate zones")
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_avg_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
 
-lyr_data_HLZ %>% 
-  ggplot(aes(x = CORG, y = lyr_14c)) +
-  geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3) +
-  # geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "y", 
-  #           alpha = 0.7) +
-  facet_wrap(~HLZ_Zone) +
-  theme_bw(base_size = 12) +
-  theme(axis.text = element_text(color = "black"),
-        panel.grid.minor = element_blank(),
-        strip.background = element_rect(fill =  NA)) +
-  scale_x_continuous("SOC [%]", trans = "log10") +
-  # geom_smooth(orientation = "y", method = "gam") +
-  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
-  guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
-                                ticks.linewidth = 2))
+climate_soil_all <- mspline_14c_c_all %>%
+  group_by(ClimateZone, pro_usda_soil_order, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n))
 
+climate_soil_all %>% 
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = ClimateZone), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = ClimateZone), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = ClimateZone), alpha = 0.3) +
+  facet_wrap(~pro_usda_soil_order) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_color_discrete("Climate zones")
+
+## Arid soils
+#Krull_2005: "medium heavy clay" ~ 55% clay content
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$entry_name == "Krull_2005"), 55)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$entry_name == "Krull_2005"), 55)
+
+#Harden_1987_PM13&14_PM14-2: based on close by profile: ~ 40% clay content
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Harden_1987_PM13&14_PM14-2"), 40)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Harden_1987_PM13&14_PM14-2"), 40)
+
+#Harden_1987_PM22_PM22: "silty loam": ~ 13% clay content
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Harden_1987_PM22_PM22"), 13)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Harden_1987_PM22_PM22"), 13)
+
+#Khomo_2017_MG-550-C_MG-550-C1: based on other profiles/depth layers: ~ 15%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Khomo_2017_MG-550-C_MG-550-C1"), 15)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Khomo_2017_MG-550-C_MG-550-C1"), 15)
+
+#Krull_2003_CHI:-26.72,150.6_CHI:-26.72,150.6_346: based on reported values in publication: ~ 60%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Krull_2003_CHI:-26.72,150.6_CHI:-26.72,150.6_346"), 65)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Krull_2003_CHI:-26.72,150.6_CHI:-26.72,150.6_346"), 65)
+
+#Krull_2003_PG:-27.45,150.52_PG:-27.45,150.52_347: based on reported values in publication: ~ 60%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Krull_2003_PG:-27.45,150.52_PG:-27.45,150.52_347"), 60)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Krull_2003_PG:-27.45,150.52_PG:-27.45,150.52_347"), 60)
+
+#Leavitt_2007_MTS_MTS: "loam": ~ 17%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Leavitt_2007_MTS_MTS"), 17)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Leavitt_2007_MTS_MTS"), 17)
+
+#Leavitt_2007_BLS_BLS: "clay loam": ~ 35%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Leavitt_2007_BLS_BLS"), 35)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Leavitt_2007_BLS_BLS"), 35)
+
+#Leavitt_2007_COS_COS: "silty loam": ~ 13%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Leavitt_2007_COS_COS"), 13)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Leavitt_2007_COS_COS"), 13)
+
+#Leavitt_2007_DHS_DHS: "fine sandy loam": ~ 10%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "Leavitt_2007_DHS_DHS"), 10)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "Leavitt_2007_DHS_DHS"), 10)
+
+#McClaran_2000_Empire-Cienega:31.7528,-110.6278_Empire-Cienega:31.7528,-110.6278_556: "sandy-loam to loam": ~ 13%
+mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
+                                              which(mspline_14c_c_all$id == "McClaran_2000_Empire-Cienega:31.7528,-110.6278_Empire-Cienega:31.7528,-110.6278_556"), 13)
+climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
+                                             which(climate_soil_all$id == "McClaran_2000_Empire-Cienega:31.7528,-110.6278_Empire-Cienega:31.7528,-110.6278_556"), 13)
+
+
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "arid") %>% 
+  mutate(clay_group = case_when(
+    lyr_clay_tot_psa < 10 ~ "< 10 %",
+    TRUE ~ "> 10 %",
+  )) %>% 
+  group_by(clay_group, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  ggplot() +
+  geom_path(aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
+                    color = ClimateZoneAnd), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c,
+                     color = ClimateZoneAnd), alpha = 0.3) +
+  geom_path(data = climate_all_and %>% 
+            filter(ClimateZoneAnd == "tropical"|
+                     ClimateZoneAnd == "temperate"|
+                     ClimateZoneAnd == "cold"), 
+            aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 2) +
+  facet_wrap(~clay_group) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_color_discrete("Clay content")
+
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_arid_clay_avg_", Sys.Date(),
+                     ".jpeg"), width = 9, height = 5)
+
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "arid") %>% 
+  mutate(clay_group = case_when(
+    lyr_clay_tot_psa < 10 ~ "< 10 %",
+    TRUE ~ "> 10 %",
+  )) %>%
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp, group = id, color = clay_group)) +
+  geom_path(size = 2) + 
+  facet_wrap(~pro_KG_present_long) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_color_discrete("Clay content")
+
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "arid") %>% 
+  mutate(clay_group = case_when(
+    lyr_clay_tot_psa < 10 ~ "< 10 %",
+    TRUE ~ "> 10 %",
+  )) %>%
+  group_by(clay_group) %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(pro_name),
+            n_profiles = n_distinct(id))
+  

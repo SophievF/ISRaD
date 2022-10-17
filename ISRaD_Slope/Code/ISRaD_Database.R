@@ -72,6 +72,10 @@ lyr_data <- lyr_data_all %>%
   filter(entry_name != "Kogel-Knabner_2008") %>% 
   #remove profile: Chalk River Laboratories (CRL):46,-77.4_563: wetland
   filter(pro_name != "Chalk River Laboratories (CRL):46,-77.4_563") %>% 
+  #remove profiles in Krull_2005 that are not bulk
+  filter(pro_name != "Strathdarr- tree zone:-23.13,143.57_426") %>% 
+  filter(pro_name != "Strathdarr- tree zone:-23.13,143.57_424") %>% 
+  filter(pro_name != "Strathdarr- tree zone:-23.13,143.57_425") %>% 
   #filter CORG >0
   filter(CORG > 0) %>% 
   #depth = 200
