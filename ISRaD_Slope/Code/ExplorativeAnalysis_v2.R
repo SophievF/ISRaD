@@ -210,13 +210,13 @@ lyr_data %>%
         legend.position = "none",
         panel.grid.minor = element_blank()) +
   scale_x_discrete("") +
-  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,65),
-                     breaks = seq(0,65,20))
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,60),
+                     breaks = seq(0,60,20))
 ggsave(file = paste0("./Figure/ISRaD_climate_soiltype_dis_usda_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
 
 lyr_data %>% 
-  group_by(ClimateZone) %>% 
+  group_by(ClimateZoneAnd) %>% 
   summarise(n_studies = n_distinct(entry_name),
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
@@ -384,7 +384,7 @@ mspline_14c_c_all %>%
   theme(axis.text = element_text(color = "black"),
         legend.position = c(0.8,0.2), 
         legend.box = "horizontal") +
-  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.005,60)) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.008,57)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
   scale_fill_viridis_c(direction = -1) +
@@ -409,8 +409,9 @@ climate_all_and %>%
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
         legend.position = c(0.15,0.25)) +
-  scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
   scale_color_discrete("Climate zones")
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_avg_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
@@ -440,8 +441,9 @@ climate_soil_all %>%
   facet_wrap(~pro_usda_soil_order) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
   scale_color_discrete("Climate zones")
 
 ## Arid soils
@@ -512,6 +514,12 @@ climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
                                              which(climate_soil_all$id == "McClaran_2000_Empire-Cienega:31.7528,-110.6278_Empire-Cienega:31.7528,-110.6278_556"), 13)
 
 
+mspline_14c_c_all %>%
+  filter(ClimateZone == "arid") %>% 
+  dplyr::select(entry_name, id, lyr_clay_tot_psa) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  filter(is.na(lyr_clay_tot_psa))
+
 mspline_14c_c_all %>% 
   filter(ClimateZone == "arid") %>% 
   mutate(clay_group = case_when(
@@ -531,21 +539,16 @@ mspline_14c_c_all %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n)) %>% 
   ggplot() +
-  geom_path(aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 2) +
+  geom_path(aes(x = median_c, y = median_14c, color = clay_group), size = 2) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
-                    color = ClimateZoneAnd), alpha = 0.3) +
+                    color = clay_group), alpha = 0.3) +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c,
-                     color = ClimateZoneAnd), alpha = 0.3) +
-  geom_path(data = climate_all_and %>% 
-            filter(ClimateZoneAnd == "tropical"|
-                     ClimateZoneAnd == "temperate"|
-                     ClimateZoneAnd == "cold"), 
-            aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 2) +
-  facet_wrap(~clay_group) +
+                     color = clay_group), alpha = 0.3) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.08,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
   scale_color_discrete("Clay content")
 
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_arid_clay_avg_", Sys.Date(),
@@ -571,9 +574,292 @@ mspline_14c_c_all %>%
   mutate(clay_group = case_when(
     lyr_clay_tot_psa < 10 ~ "< 10 %",
     TRUE ~ "> 10 %",
+  )) %>% 
+  group_by(clay_group) %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(pro_name),
+            n_profiles = n_distinct(id))
+
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "arid") %>% 
+  mutate(clay_group = case_when(
+    lyr_clay_tot_psa < 10 ~ "< 10 %",
+    TRUE ~ "> 10 %",
   )) %>%
+  group_by(clay_group) %>%
+  dplyr::select(lyr_clay_tot_psa) %>% 
+  skimr::skim()
+
+# Polar climates
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "polar") %>% 
+  group_by(pro_KG_present_long, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() +
+  geom_path(aes(x = median_c, y = median_14c, color = pro_KG_present_long), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
+                    color = pro_KG_present_long), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c,
+                     color = pro_KG_present_long), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.08,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Climate")
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_polar_avg_climate_", Sys.Date(),
+                     ".jpeg"), width = 9, height = 5)
+
+
+climate_all %>%
+  filter(ClimateZone == "polar") %>%
+  # filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = ClimateZone), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = ClimateZone), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = ClimateZone), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Climate zones")
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_polar_avg_", Sys.Date(),
+                     ".jpeg"), width = 9, height = 5)
+
+mspline_14c_c_all %>% 
+  filter(ClimateZoneAnd == "polar") %>% 
+  group_by(pro_KG_present_long) %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(pro_name),
+            n_profiles = n_distinct(id))
+
+# Tropical climates
+climate_all_and %>%
+  filter(ClimateZoneAnd == "tropical") %>%
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = ClimateZone), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = ClimateZone), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = ClimateZone), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Climate zones")
+
+mspline_14c_c_all %>% 
+  filter(ClimateZoneAnd == "tropical") %>% 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp, group = id, color = pro_clay_100_cm_SG)) +
+  geom_path(size = 2) +
+  # facet_wrap(~pro_wrb_soil_order) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_color_viridis_c()
+
+climate_soil_all %>% 
+  filter(ClimateZone == "tropical") %>% 
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = pro_usda_soil_order), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = pro_usda_soil_order), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = pro_usda_soil_order), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = c(0.8,0.2)) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Soil type")
+
+mspline_14c_c_all %>% 
+  filter(ClimateZoneAnd == "tropical") %>%
+  group_by(pro_KG_present_long, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 33) %>%
+  ggplot() +
+  geom_path(aes(x = median_c, y = median_14c, 
+                color = factor(pro_KG_present_long, 
+                               levels = c("Tropical, rainforest",
+                                          "Tropical, monsoon",
+                                          "Tropical, savannah"))), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
+                    color = pro_KG_present_long), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c,
+                     color = pro_KG_present_long), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = c(0.8,0.2)) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Climate zone")
+
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_tropical_climate_avg_", Sys.Date(),
+                     ".jpeg"), width = 10, height = 5)
+
+mspline_14c_c_all %>% 
+  filter(ClimateZoneAnd == "tropical") %>%
+  mutate(clay_sg = cut_interval(pro_clay_0_cm_SG, 2)) %>% 
+  mutate(clay_group = case_when(
+    # lyr_clay_tot_psa < 36 ~ "< 36 %",
+    # lyr_clay_tot_psa > 36 ~ "> 36 %",
+    clay_sg == "[16,35]" ~ "< 36 %",
+    clay_sg == "(35,54]" ~ "> 36 %"
+  )) %>% 
+  group_by(clay_group, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 33) %>%
+  ggplot() +
+  geom_path(aes(x = median_c, y = median_14c, color = clay_group), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
+                    color = clay_group), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c,
+                     color = clay_group), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Clay content")
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_tropical_clay_avg_", Sys.Date(),
+                     ".jpeg"), width = 9, height = 5)
+
+mspline_14c_c_all %>% 
+  filter(ClimateZoneAnd == "tropical") %>% 
+  mutate(clay_group = cut_interval(pro_clay_0_cm_SG, 2)) %>% 
   group_by(clay_group) %>% 
   summarise(n_studies = n_distinct(entry_name),
             n_sites = n_distinct(pro_name),
             n_profiles = n_distinct(id))
   
+  
+# Temperate climates
+climate_all_and %>%
+  filter(ClimateZoneAnd == "temperate") %>%
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = ClimateZone), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = ClimateZone), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = ClimateZone), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Climate zones")
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_temp_usda_avg_", Sys.Date(),
+                    ".jpeg"), width = 9, height = 5)
+
+climate_soil_all %>%
+  filter(ClimateZone == "temperate") %>%
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = pro_usda_soil_order), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = pro_usda_soil_order), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = pro_usda_soil_order), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.008,60)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Soil type")
+
+mspline_14c_c_all %>% 
+  filter(ClimateZoneAnd == "temperate") %>%
+  mutate(wrb_group = case_when(
+    pro_wrb_soil_order == "Acrisols" ~ "a",
+    pro_wrb_soil_order == "Ferralsols" ~ "a",
+    pro_wrb_soil_order == "Nitisols" ~ "a",
+    pro_wrb_soil_order == "Alisols" ~ "a",
+    pro_wrb_soil_order == "Vertisols" ~ "b",
+    pro_wrb_soil_order == "Andosols" ~ "b",
+    TRUE ~ "c"
+  )) %>% 
+  group_by(pro_wrb_soil_order, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 33) %>%
+  ggplot() +
+  geom_path(aes(x = median_c, y = median_14c, color = pro_wrb_soil_order), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
+                    color = pro_wrb_soil_order), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c,
+                     color = pro_wrb_soil_order), alpha = 0.3) +
+  facet_wrap(~wrb_group) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = c(0.9, 0.25)) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.1,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Soil type")
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_temp_wrb_avg_", Sys.Date(),
+                    ".jpeg"), width = 10, height = 5)
+
+mspline_14c_c_all %>% 
+  filter(ClimateZoneAnd == "temperate") %>% 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp, group = id, color = pro_BIO12_mmyr_WC2.1)) +
+  geom_path(size = 2) +
+  # facet_wrap(~pro_usda_soil_order) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]"))) +
+  scale_color_viridis_c(direction = -1)

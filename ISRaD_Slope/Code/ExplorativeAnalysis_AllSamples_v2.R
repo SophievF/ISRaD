@@ -8,7 +8,7 @@ library(ggpubr)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-05"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-17"))
 
 lyr_all %>% 
   summarise(n_studies = n_distinct(entry_name),
@@ -167,7 +167,7 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1) +
+  scale_fill_viridis_c(direction = -1) 
   coord_cartesian(ylim = c(-1000,400))
 
 lyr_data %>%
@@ -181,8 +181,10 @@ lyr_data %>%
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
                      limits = c(-1005,400)) +
   scale_fill_viridis_c(direction = -1) +
-  coord_cartesian(ylim = c(-1000,400)) +
-  geom_smooth(orientation = "y", method = "loess")
+  # geom_smooth(orientation = "y", method = "loess", color = "blue") +
+  # geom_smooth(method = "loess", color = "red") +
+  coord_cartesian(ylim = c(-1000,400)) 
+  
 ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_all_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
 
