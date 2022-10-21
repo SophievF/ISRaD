@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-10-05")
+ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-10-21")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -43,7 +43,7 @@ names(lyr_data_all)
 #Prepare and filter data
 lyr_data <- lyr_data_all %>% 
   drop_na(lyr_14c) %>% 
-  drop_na(lyr_c_org_filled) %>% 
+  drop_na(lyr_c_org_filled) %>%  
   rename(CORG = lyr_c_org_filled) %>% 
   filter(lyr_top >= 0,
            lyr_bot > 0) %>% 

@@ -10,7 +10,7 @@ library(RColorBrewer)
 library(mpspline2)
 
 #Load filtered lyr data
-lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-17"))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-21"))
 
 lyr_all %>% 
   summarise(n_studies = n_distinct(entry_name),
@@ -58,9 +58,8 @@ lyr_data$ClimateZone <- factor(lyr_data$ClimateZone,
                                           "temperate", "tropical"))
 
 lyr_data$ClimateZoneAnd <- factor(lyr_data$ClimateZoneAnd,
-                                  levels = c("polar", "cold", "arid",
-                                             "temperate", "tropical",
-                                             "andisols"))
+                                  levels = c("andisols", "polar", "cold", 
+                                             "temperate", "arid","tropical"))
 
 ## Check climate
 lyr_data %>% 
@@ -80,18 +79,19 @@ library(raster)
 climate_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/Beck_KG_V1/Beck_KG_V1_present_0p083.tif"
 climate_raster <- raster::raster(climate_dir)
 
-plot(climate_raster)
+# plot(climate_raster)
 
 #reclassify climate raster
 recal <- c(0,3,1, 3,7,2, 7,16,3, 16,28,4, 28,30,5)
 recal_mat <- matrix(recal, ncol = 3, byrow = TRUE)
 
 climate_grp <- reclassify(climate_raster, recal_mat)
-plot(climate_grp)
+# plot(climate_grp)
 
 # convert to a df for plotting in two steps,
 # First, to a SpatialPointsDataFrame
 climate_pts <- rasterToPoints(climate_grp, spatial = TRUE)
+
 # Then to a 'conventional' dataframe
 climate_df  <- data.frame(climate_pts) %>%
   drop_na() %>% 
@@ -121,14 +121,13 @@ ggplot() +
   geom_point(data = lyr_data,
              aes(x = pro_long, y = pro_lat),
              fill = "#252525", size = 1.5, shape = 21, color = "white") +
-  theme_bw(base_size = 12) +
+  theme_bw(base_size = 16) +
   theme(rect = element_blank(),
         panel.grid = element_blank(),
         axis.ticks = element_line(color = "black"),
         axis.text = element_text(color = "black"),
         axis.line = element_line(color = "black"),
-        legend.position = c(0.11,0.29),
-        legend.title = element_text(size = 10)) +
+        legend.position = c(0.11,0.29)) +
   scale_x_continuous("", labels = c("100°W", "0", "100°E"), expand = c(0,0),
                      breaks = c(-100,0,100), limits = c(-170,180)) +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), expand = c(0,0),
@@ -136,13 +135,13 @@ ggplot() +
   scale_fill_manual("Climate zones", values = climate_color)
 
 ggsave(file = paste0("./Figure/ISRaD_14C_Climate_map_", Sys.Date(),
-                     ".jpeg"), width = 6, height = 3.5)
+                     ".jpeg"), width = 11, height = 6)
   
 ggplot() +  
   geom_map(
     data = world, map = world,
     aes(long, lat, map_id = region),
-    color = "white", fill = "#d9d9d9")  +
+    color = "white", fill = "#d9d9d9") +
   geom_point(data = lyr_data, 
              aes(x = pro_long, y = pro_lat),
              fill = "#116656", size = 2, shape = 21, color = "white") +
@@ -450,68 +449,46 @@ climate_soil_all %>%
 #Krull_2005: "medium heavy clay" ~ 55% clay content
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$entry_name == "Krull_2005"), 55)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$entry_name == "Krull_2005"), 55)
 
 #Harden_1987_PM13&14_PM14-2: based on close by profile: ~ 40% clay content
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Harden_1987_PM13&14_PM14-2"), 40)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Harden_1987_PM13&14_PM14-2"), 40)
 
 #Harden_1987_PM22_PM22: "silty loam": ~ 13% clay content
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Harden_1987_PM22_PM22"), 13)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Harden_1987_PM22_PM22"), 13)
 
 #Khomo_2017_MG-550-C_MG-550-C1: based on other profiles/depth layers: ~ 15%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Khomo_2017_MG-550-C_MG-550-C1"), 15)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Khomo_2017_MG-550-C_MG-550-C1"), 15)
 
 #Krull_2003_CHI:-26.72,150.6_CHI:-26.72,150.6_346: based on reported values in publication: ~ 60%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Krull_2003_CHI:-26.72,150.6_CHI:-26.72,150.6_346"), 65)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Krull_2003_CHI:-26.72,150.6_CHI:-26.72,150.6_346"), 65)
 
 #Krull_2003_PG:-27.45,150.52_PG:-27.45,150.52_347: based on reported values in publication: ~ 60%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Krull_2003_PG:-27.45,150.52_PG:-27.45,150.52_347"), 60)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Krull_2003_PG:-27.45,150.52_PG:-27.45,150.52_347"), 60)
 
 #Leavitt_2007_MTS_MTS: "loam": ~ 17%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Leavitt_2007_MTS_MTS"), 17)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Leavitt_2007_MTS_MTS"), 17)
 
 #Leavitt_2007_BLS_BLS: "clay loam": ~ 35%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Leavitt_2007_BLS_BLS"), 35)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Leavitt_2007_BLS_BLS"), 35)
 
 #Leavitt_2007_COS_COS: "silty loam": ~ 13%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Leavitt_2007_COS_COS"), 13)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Leavitt_2007_COS_COS"), 13)
 
 #Leavitt_2007_DHS_DHS: "fine sandy loam": ~ 10%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "Leavitt_2007_DHS_DHS"), 10)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "Leavitt_2007_DHS_DHS"), 10)
 
 #McClaran_2000_Empire-Cienega:31.7528,-110.6278_Empire-Cienega:31.7528,-110.6278_556: "sandy-loam to loam": ~ 13%
 mspline_14c_c_all$lyr_clay_tot_psa <- replace(mspline_14c_c_all$lyr_clay_tot_psa,
                                               which(mspline_14c_c_all$id == "McClaran_2000_Empire-Cienega:31.7528,-110.6278_Empire-Cienega:31.7528,-110.6278_556"), 13)
-climate_soil_all$lyr_clay_tot_psa <- replace(climate_soil_all$lyr_clay_tot_psa,
-                                             which(climate_soil_all$id == "McClaran_2000_Empire-Cienega:31.7528,-110.6278_Empire-Cienega:31.7528,-110.6278_556"), 13)
 
 
 mspline_14c_c_all %>%
@@ -519,6 +496,41 @@ mspline_14c_c_all %>%
   dplyr::select(entry_name, id, lyr_clay_tot_psa) %>% 
   distinct(id, .keep_all = TRUE) %>% 
   filter(is.na(lyr_clay_tot_psa))
+
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "arid") %>% 
+  mutate(clay_group = case_when(
+    lyr_clay_tot_psa < 10 ~ "< 10 %",
+    TRUE ~ "> 10 %",
+  )) %>% 
+  group_by(pro_KG_present_long, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() +
+  geom_path(aes(x = median_c, y = median_14c, color = pro_KG_present_long), size = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
+                    color = pro_KG_present_long), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c,
+                     color = pro_KG_present_long), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.08,30)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,200)) +
+  scale_color_discrete("Clay content")
+
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_arid_climate_avg_", Sys.Date(),
+                     ".jpeg"), width = 9, height = 5)
 
 mspline_14c_c_all %>% 
   filter(ClimateZone == "arid") %>% 
@@ -538,6 +550,7 @@ mspline_14c_c_all %>%
   distinct(median_14c, .keep_all = TRUE) %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n)) %>% 
+  filter(n > 4 & n_rel > 33) %>% 
   ggplot() +
   geom_path(aes(x = median_c, y = median_14c, color = clay_group), size = 2) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c,
@@ -560,9 +573,9 @@ mspline_14c_c_all %>%
     lyr_clay_tot_psa < 10 ~ "< 10 %",
     TRUE ~ "> 10 %",
   )) %>%
-  ggplot(aes(x = CORG_msp, y = lyr_14c_msp, group = id, color = clay_group)) +
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp, group = id, color = pro_KG_present_long)) +
   geom_path(size = 2) + 
-  facet_wrap(~pro_KG_present_long) +
+  facet_wrap(~clay_group) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
@@ -582,6 +595,16 @@ mspline_14c_c_all %>%
 
 mspline_14c_c_all %>% 
   filter(ClimateZone == "arid") %>% 
+  group_by(pro_KG_present_long) %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(pro_name),
+            n_profiles = n_distinct(id))
+
+mspline_14c_c_all %>% 
+  filter(pro_KG_present_long == "Arid, desert, cold")
+
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "arid") %>% 
   mutate(clay_group = case_when(
     lyr_clay_tot_psa < 10 ~ "< 10 %",
     TRUE ~ "> 10 %",
@@ -589,6 +612,11 @@ mspline_14c_c_all %>%
   group_by(clay_group) %>%
   dplyr::select(lyr_clay_tot_psa) %>% 
   skimr::skim()
+
+mspline_14c_c_all %>% 
+  filter(ClimateZone == "arid") %>%
+  group_by(pro_KG_present_long) %>% 
+  skimr::skim(pro_BIO1_C_WC2.1, pro_BIO12_mmyr_WC2.1, lyr_clay_tot_psa)
 
 # Polar climates
 mspline_14c_c_all %>% 
