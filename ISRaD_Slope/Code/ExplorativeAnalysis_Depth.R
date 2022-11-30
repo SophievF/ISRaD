@@ -109,16 +109,17 @@ ggplot() +
                     filter(grepl("Baisden_2007_China hat|Lawrence_2021_Mattole_MT3", id)),
                   aes(x = lyr_14c, y = depth, ymin = lyr_top, ymax = lyr_bot,
                       color = id), size = 1) +
-  theme_classic(base_size = 50) +
+  theme_bw(base_size = 24) +
   theme(axis.text = element_text(color = "black"),
-        legend.position = "none") +
-  scale_y_reverse("Depth [cm]", expand = c(0,0), limits = c(105,0)) +
+        legend.position = c(0.28,0.79)) +
+  scale_y_reverse("Depth [cm]", expand = c(0,0), limits = c(100,0)) +
   scale_x_continuous(expression(paste(Delta^14,"C [‰]")), 
-                     labels = c(-1000, "", -500, "", 0, ""),
-                     expand = c(0,0), limits = c(-1000,250),
-                     position = "top")
+                     expand = c(0,0), limits = c(-1000,200),
+                     position = "top") +
+  scale_color_discrete(paste0("Example profile: raw data (points)\n+ fitted curve (line)"), 
+                       label = c("P1", "P2"))
 ggsave(file = paste0("./Figure/ISRaD_14C_depth_example_", Sys.Date(),
-                     ".jpeg"), width = 9, height = 10)
+                     ".jpeg"), width = 11, height = 5.5)
 
 
 
