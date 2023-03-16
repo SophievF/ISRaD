@@ -19,7 +19,7 @@ lyr_msp_data <- read_csv("./Data/ISRaD_flat_splined_filled_2023-02-08.csv") %>%
                 pro_GPP_Fluxcom_2001_2012_gC_m2d1, lyr_clay_mod,
                 ClimateZoneAnd, MineralType, UD, LD, lyr_obs_date_y)
 
-skimr::skim(lyr_msp_data)
+skimr::skim_without_charts(lyr_msp_data)
 
 lyr_msp_data %>%
   distinct(id, .keep_all = TRUE) %>%
@@ -30,8 +30,8 @@ lyr_msp_data %>%
   count(MineralType)
 
 lyr_msp_data %>%
-  skimr::skim(UD, lyr_14c_msp, CORG_msp, pro_MAT_mod, 
-              pro_GPP_Fluxcom_2001_2012_gC_m2d1, lyr_clay_mod, pro_AI)
+  skimr::skim_without_charts(UD, lyr_14c_msp, CORG_msp, pro_MAT_mod, 
+                             pro_GPP_Fluxcom_2001_2012_gC_m2d1, lyr_clay_mod, pro_AI)
 
 ### Set-up a depth-resolved model with SoilR (Carlos) ###
 source("C:/Users/sfromm/Documents/GitHub/SoilR-exp/prototypes/VerticalTransfer/VTLM.R")
@@ -881,3 +881,8 @@ pool_results_a_2019 %>%
                      expand = c(0,0))
 ggsave(file = paste0("./Figure/TwoPoolModel_a_values_2019_bothPools_", 
                      Sys.Date(), ".jpeg"), width = 12, height = 6)
+
+## Combine various model runs in one figure
+
+
+
