@@ -114,6 +114,7 @@ climate_df$ClimateZone <- factor(climate_df$ClimateZone,
                                             "warm temperate", "tropical"))
 
 climate_color <- c("#e66101", "#fdb863", "#f6e8c3", "#b2abd2", "#5e3c99")
+color_palette(palette = "Purples")
 
 ggplot() +
   geom_raster(data = climate_df, 
@@ -132,8 +133,10 @@ ggplot() +
                      breaks = c(-100,0,100), limits = c(-170,180)) +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), expand = c(0,0),
                      breaks = c(-50,0,50), limits = c(-55,80)) +
-  scale_fill_manual("Climate zones", values = climate_color)
-
+  # scale_fill_brewer("Climate zones", palette = "Purples") +
+  scale_fill_manual("Climate zones",
+                     values = c("#8c96c6", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"))
+  
 ggsave(file = paste0("./Figure/ISRaD_14C_Climate_map_", Sys.Date(),
                      ".jpeg"), width = 11, height = 6)
   
@@ -195,6 +198,53 @@ mspline_14c_c_all <- mspline_14c_c %>%
   ungroup() 
 
 ## Data exploration ##
+
+# Data example
+p1 <- ggplot() +
+  geom_line(data = lyr_data_mpspline_14c$est_1cm %>% 
+              filter(LD < 101) %>% 
+              filter(grepl("Baisden_2007_China hat|Lawrence_2021_Mattole_MT3", id)),
+            aes(y = UD, x = SPLINED_VALUE, group = id, color = id), orientation = "y",
+            size = 1.5) +
+  geom_pointrange(data = lyr_mpspline %>% 
+                    filter(lyr_bot < 101) %>% 
+                    filter(grepl("Baisden_2007_China hat|Lawrence_2021_Mattole_MT3", id)),
+                  aes(x = lyr_14c, y = depth, ymin = lyr_top, ymax = lyr_bot,
+                      color = id), size = 1) +
+  theme_bw(base_size = 24) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = c(0.29,0.79),
+        legend.text = element_text(size = 16),
+        legend.title = element_text(size = 18)) +
+  scale_y_reverse("Depth [cm]", expand = c(0,0), limits = c(100,0)) +
+  scale_x_continuous(expression(paste(Delta^14,"C [‰]")), 
+                     expand = c(0,0), limits = c(-1000,200),
+                     position = "top") +
+  scale_color_discrete(paste0("Example profile:\n raw data (points) +\n fitted curve (line)"), 
+                       label = c("P1", "P2"))
+
+p2 <- ggplot() +
+  geom_line(data = lyr_data_mpspline_c$est_1cm %>% 
+              filter(LD < 101) %>% 
+              filter(grepl("Baisden_2007_China hat|Lawrence_2021_Mattole_MT3", id)),
+            aes(y = UD, x = SPLINED_VALUE, group = id, color = id), orientation = "y",
+            size = 1.5) +
+  geom_pointrange(data = lyr_mpspline %>% 
+                    filter(lyr_bot < 101) %>% 
+                    filter(grepl("Baisden_2007_China hat|Lawrence_2021_Mattole_MT3", id)),
+                  aes(x = CORG, y = depth, ymin = lyr_top, ymax = lyr_bot,
+                      color = id), size = 1) +
+  theme_bw(base_size = 24) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none") +
+  scale_y_reverse("", expand = c(0,0), limits = c(100,0)) +
+  scale_x_continuous("SOC [wt-%]; log-scaled", expand = c(0,0), position = "top", trans = "log10") +
+  scale_color_discrete(paste0("Example profile:\n raw data (points) +\n fitted curve (line)"), 
+                       label = c("P1", "P2"))
+
+ggarrange(p1, p2)
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_depth_example_", Sys.Date(),
+                     ".jpeg"), width = 11.5, height = 5.5)
 
 # Data distribution
 lyr_data %>% 
@@ -426,6 +476,7 @@ climate_all_and$ClimateZoneAnd <- factor(climate_all_and$ClimateZoneAnd,
                                              "warm temperate", "arid", "tropical"))
 
 depth_sum <- climate_all_and %>% 
+  filter(ClimateZoneAnd != "volcanic soils") %>% 
   filter(n > 4 & n_rel > 33) %>% 
   dplyr::select(ClimateZoneAnd, UD, median_c, median_14c) %>% 
   dplyr::filter(UD == 1|
@@ -441,7 +492,8 @@ depth_sum <- climate_all_and %>%
                   UD == 99)
 
 
-climate_all_and %>% 
+c1 <- climate_all_and %>% 
+  filter(ClimateZoneAnd != "volcanic soils") %>% 
   filter(n > 4 & n_rel > 33) %>% 
   ggplot() + 
   geom_path(aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 4) +
@@ -453,13 +505,15 @@ climate_all_and %>%
              shape = 21, fill = "black", color = "white") +
   theme_bw(base_size = 33) +
   theme(axis.text = element_text(color = "black"),
-        legend.position = c(0.2,0.2),
-        axis.title = element_text(face = "bold")) +
+        legend.position = c(0.21,0.15),
+        axis.title = element_text(face = "bold"),
+        legend.background = element_blank()) +
   scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10", limits = c(0.1,35), expand = c(0,0)) +
   scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     limits = c(-1000,200)) +
-  scale_color_manual("Grouping", 
-                     values = c("#F7766F", "#e66101", "#fdb863", "#b2abd2", "#dfc27d", "#5e3c99"))
+                     limits = c(-1000,125), breaks = seq(-1000,0,250)) +
+  # scale_color_brewer("Climate zones", palette = "Purples") +
+  scale_color_manual("Climate zones",
+                     values = c("#8c96c6", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"))
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_avg_", Sys.Date(),
                      ".jpeg"), width = 19.5, height = 11.5)
 
@@ -530,7 +584,7 @@ depth_sum_clay <- clay_type %>%
                   UD == 99)
 
 
-clay_type %>% 
+c2 <- clay_type %>% 
   filter(n > 4 & n_rel > 33) %>% 
   ggplot() + 
   geom_path(aes(x = median_c, y = median_14c, color = ClayType), size = 4) +
@@ -543,14 +597,18 @@ clay_type %>%
   theme_bw(base_size = 33) +
   theme(axis.text = element_text(color = "black"),
         axis.title = element_text(face = "bold"),
-        legend.position = c(0.25,0.15)) +
+        legend.position = c(0.3,0.13),
+        legend.background = element_blank()) +
   scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10", limits = c(0.1,35), expand = c(0,0)) +
-  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     limits = c(-750,125), breaks = seq(-750,0,250)) +
-  scale_color_manual("Clay type", 
-                     values = c("#F7766F", "#d8b365", "#5ab4ac"))
-ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_ClayType_avg_", Sys.Date(),
-                     ".jpeg"), width = 11, height = 11.5)
+  scale_y_continuous("", expand = c(0,0),
+                     limits = c(-1000,125), breaks = seq(-1000,0,250)) +
+  # scale_color_manual("Mineral type", 
+  #                    values = c("#238b45", "#66c2a4", "#b2e2e2")) +
+  scale_color_brewer("Mineral type", palette = "Oranges", direction = -1)
+
+ggarrange(c1,c2, widths = c(1.2,1))
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_Climate_ClayType_avg_", Sys.Date(),
+                     ".jpeg"), width = 20, height = 11.5)
 
 ## Arid soils
 #Krull_2005: "medium heavy clay" ~ 55% clay content

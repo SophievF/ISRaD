@@ -3,8 +3,8 @@
 # Sophie von Fromm #
 # 01/06/2022 #
 
-devtools::install_github('International-Soil-Radiocarbon-Database/ISRaD/Rpkg',
-                         force = TRUE)
+# devtools::install_github('International-Soil-Radiocarbon-Database/ISRaD/Rpkg',
+#                          force = TRUE)
 
 library(ISRaD)
 library(tidyverse)
@@ -31,7 +31,7 @@ names(ISRaD_key)
 
 saveRDS(ISRaD_key, paste0(getwd(), "/Data/ISRaD_extra_", Sys.Date()))
 
-ISRaD_key <- readRDS("./Data/ISRaD_extra_2022-10-21")
+ISRaD_key <- readRDS("./Data/ISRaD_extra_2023-02-08")
 
 lyr_data_all <- ISRaD.flatten(ISRaD_key, 'layer')
 
@@ -40,6 +40,11 @@ lyr_data_all %>%
 
 names(lyr_data_all)
 
+# lyr_data_all %>% 
+#   filter(!is.na(pro_peatland)) %>% 
+#   count(entry_name, pro_country, pro_land_cover, pro_usda_soil_order) %>% 
+#   view()
+
 #Prepare and filter data
 lyr_data <- lyr_data_all %>% 
   drop_na(lyr_14c) %>% 
@@ -47,31 +52,37 @@ lyr_data <- lyr_data_all %>%
   rename(CORG = lyr_c_org_filled) %>% 
   filter(lyr_top >= 0,
            lyr_bot > 0) %>% 
+  #depth issue - mineral interface not known
+  # mutate(pro_peatland_mod = case_when(
+  #   !is.na(pro_peatland) ~ "yes",
+  #   pro_usda_soil_order == "Histosols" ~ "yes",
+  #   pro_land_cover == "wetland" ~ "yes"
+  # )) %>% 
   filter(pro_land_cover != "wetland"|
-           is.na(pro_land_cover)) %>% 
-  filter(is.na(pro_peatland)) %>% 
+           is.na(pro_land_cover)) %>%
+  filter(is.na(pro_peatland)) %>%
   filter(lyr_top != "Inf",
          lyr_bot != "Inf") %>% 
   unite("id", c(entry_name, site_name, pro_name), remove = FALSE) %>% 
-  filter(!grepl("peat|Peat", id)) %>% 
+  filter(!grepl("peat|Peat", id)) %>%
   #remove permafrost studies
-  #filter(is.na(lyr_all_org_neg)) %>% 
+  # filter(is.na(lyr_all_org_neg)) %>%
   #remove Huang_1999: peat study not flagged
-  filter(entry_name != "Huang_1999") %>% 
+  filter(entry_name != "Huang_1999") %>%
   #remove Huang_1996: peat study not flagged
-  filter(entry_name != "Huang_1996") %>% 
+  filter(entry_name != "Huang_1996") %>%
   #remove Bol_1996: peat study not flagged
-  filter(entry_name != "Bol_1996") %>% 
+  # filter(entry_name != "Bol_1996") %>%
   #remove Baisden_2002: data is also in Baisden_2007
   filter(entry_name != "Baisden_2002") %>% 
   #remove Diemont_1987: peat study
-  filter(entry_name != "Diemont_1987") %>% 
+  filter(entry_name != "Diemont_1987") %>%
   #remove OBrien_1986: profile from under a house
   filter(entry_name != "OBrien_1986") %>%
   #remove Kogel-Knabner_2008: same data as in Eusterhues_2003
   filter(entry_name != "Kogel-Knabner_2008") %>% 
   #remove profile: Chalk River Laboratories (CRL):46,-77.4_563: wetland
-  filter(pro_name != "Chalk River Laboratories (CRL):46,-77.4_563") %>% 
+  filter(pro_name != "Chalk River Laboratories (CRL):46,-77.4_563") %>%
   #remove profiles in Krull_2005 that are not bulk
   filter(pro_name != "Strathdarr- tree zone:-23.13,143.57_426") %>% 
   filter(pro_name != "Strathdarr- tree zone:-23.13,143.57_424") %>% 
@@ -148,17 +159,34 @@ lyr_data_clean %>%
 lyr_data_clean %>% 
   count(pro_KG_present_short)
 
+lyr_data_clean %>% 
+  skimr::skim(lyr_clay_tot_psa)
+
 lyr_data_clean %>%
   filter(is.na(pro_KG_present_long)) %>% 
   count(entry_name, pro_name, pro_country)
 
 summary(lyr_data_clean$pro_BIO12_mmyr_WC2.1)
 
-lyr_data_fill <- lyr_data_clean %>% 
-  mutate(pro_BIO12_mmyr_WC2.1 = ifelse(is.na(pro_BIO12_mmyr_WC2.1), 
-                                       pro_MAP, pro_BIO12_mmyr_WC2.1),
-         pro_BIO1_C_WC2.1 = ifelse(is.na(pro_BIO1_C_WC2.1),
-                                   pro_MAT, pro_BIO1_C_WC2.1)) %>% 
+lyr_data_clean %>% 
+  count(pro_land_cover)
+
+lyr_data_clean %>% 
+  filter(is.na(pro_land_cover)) %>% 
+  count(entry_name, pro_name, pro_country)
+
+lyr_data_clean$pro_BIO12_mmyr_WC2.1 <- as.numeric(lyr_data_clean$pro_BIO12_mmyr_WC2.1)
+lyr_data_clean$pro_BIO1_C_WC2.1 <- as.numeric(lyr_data_clean$pro_BIO1_C_WC2.1)
+
+lyr_data_fill <- lyr_data_clean %>%
+  mutate(pro_MAP_mod = case_when(
+    is.na(pro_MAP) ~ pro_BIO12_mmyr_WC2.1,
+    TRUE ~ pro_MAP
+  )) %>% 
+  mutate(pro_MAT_mod = case_when(
+    is.na(pro_MAT) ~ pro_BIO1_C_WC2.1,
+    TRUE ~ pro_MAT
+  )) %>% 
   #Use WRB to fill USDA: https://www.isric.org/sites/default/files/major_soils_of_the_world/annexes/index.pdf
   mutate(pro_usda_soil_order = ifelse(grepl("andosol|Andosol", pro_soil_taxon), "Andisols",
                                       pro_usda_soil_order),
@@ -196,7 +224,7 @@ lyr_data_fill <- lyr_data_clean %>%
     entry_name == "Czimczik_Unpublished" &
       is.na(pro_KG_present_short) ~ "ET",
     TRUE ~ pro_KG_present_short
-  ))
+  )) 
 
 lyr_data_fill %>% 
   count(pro_usda_soil_order)
@@ -209,7 +237,75 @@ lyr_data_fill %>%
   filter(is.na(pro_KG_present_long)) %>% 
   count(entry_name)
 
-summary(lyr_data_fill$pro_BIO12_mmyr_WC2.1)
+summary(lyr_data_fill$pro_MAP_mod)
+summary(lyr_data_fill$pro_MAT_mod)
+
+## Add Global GPP
+library(ncdf4)
+library(raster)
+library(sf)
+
+read_nc_fun <- function(path, pattern = "*.nc"){
+  list.files(path, pattern, full.names = TRUE) %>% 
+    map(~brick(.))
+}
+
+GPP_global <- read_nc_fun(path = "D:/Sophie/PhD/AfSIS_GlobalData/Fluxcom_GPP")
+
+#calculate yearly means for each year
+Global_calc <- map(GPP_global, ~calc(., fun = mean))
+
+#Calculate long-term mean
+GPP_mean <- (Global_calc[[1]]+Global_calc[[2]]+Global_calc[[3]]+
+               Global_calc[[4]]+Global_calc[[5]]+Global_calc[[6]]+
+               Global_calc[[7]]+Global_calc[[8]]+Global_calc[[9]]+
+               Global_calc[[10]]+Global_calc[[11]]+Global_calc[[12]])/12
+
+ISRaD_sf <- lyr_data_fill %>% 
+  dplyr::select(entry_name, site_name, pro_name,lyr_name, id, pro_long, pro_lat) %>% 
+  sf::st_as_sf(coords = c("pro_long", "pro_lat"), crs = 4326)
+
+pro_GPP <- raster::extract(GPP_mean, ISRaD_sf, df = TRUE, 
+                           #buffer seems to be large; yet summary looks similar
+                           #by adding the puffer - no NA's
+                           buffer = 100000, fun = mean,
+                           na.rm = TRUE) %>% 
+  as.data.frame() %>% 
+  rename(pro_GPP_Fluxcom_2001_2012_gC_m2d1 = layer) %>% 
+  dplyr::select(-ID)
+
+summary(pro_GPP)
+
+## Add PET
+PET_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/Global-AI_ET0_v3_annual/et0_v3_yr.tif"
+PET_global <- raster(PET_dir) 
+
+pro_PET <- raster::extract(PET_global, ISRaD_sf, df = TRUE) %>% 
+  rename(pro_PET_mm_yr = et0_v3_yr) %>% 
+  dplyr::select(-ID)
+
+summary(pro_PET)
+
+lyr_data_fill_GPP_PET <- cbind(lyr_data_fill, pro_GPP, pro_PET)
+
+summary(lyr_data_fill_GPP_PET$pro_GPP_Fluxcom_2001_2012_gC_m2d1)
+summary(lyr_data_fill_GPP_PET$pro_PET_mm_yr)
+
+lyr_data_fill_GPP_PET %>% 
+  filter(is.na(pro_PET_mm_yr)) %>% 
+  count(entry_name)
+
+#Gap-fill missing PET values from other PET product (ISRaD_extra)
+lyr_data_fill_GPP_PET$pro_PET_mm_yr <- as.numeric(lyr_data_fill_GPP_PET$pro_PET_mm_yr)
+lyr_data_fill_GPP_PET$pro_PET_mmyr <- as.numeric(lyr_data_fill_GPP_PET$pro_PET_mmyr)
+
+lyr_data_fill_GPP_PET <- lyr_data_fill_GPP_PET %>% 
+  mutate(pro_PET_mm_yr_mod = case_when(
+    is.na(pro_PET_mm_yr) ~ pro_PET_mmyr,
+    TRUE ~ pro_PET_mm_yr
+  ))
+
+summary(lyr_data_fill_GPP_PET$pro_PET_mm_yr_mod)
 
 ## Add WRB soil classification
 #https://data.isric.org/geonetwork/srv/ger/catalog.search#/metadata/5c301e97-9662-4f77-aa2d-48facd3c9e14
@@ -229,7 +325,7 @@ wrb_data <- wrb_number %>%
   left_join(wrb_legend) %>% 
   dplyr::select(-Number) 
 
-lyr_data_fill_wrb <- cbind(lyr_data_fill, wrb_data) %>%
+lyr_data_fill_wrb <- cbind(lyr_data_fill_GPP_PET, wrb_data) %>%
   tibble() %>% 
   #Manually fix missing values
   mutate(pro_250m_wrb_soil_order = ifelse(pro_name == "Turlock Lake_123",

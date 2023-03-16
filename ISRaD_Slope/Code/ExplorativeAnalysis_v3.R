@@ -9,6 +9,8 @@ library(ggpubr)
 library(RColorBrewer)
 library(mpspline2)
 
+source("./Code/function_mpspline_mod.R")
+
 #Load filtered lyr data
 lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-21"))
 
@@ -52,6 +54,7 @@ lyr_data %>%
             n_profiles = n_distinct(id))
 
 lyr_all %>% 
+  filter(lyr_obs_date_y > 1959) %>%
   summarise(n_studies = n_distinct(entry_name),
             n_sites = n_distinct(site_name),
             n_profiles = n_distinct(id))
@@ -70,13 +73,16 @@ lyr_data$ClimateZoneAnd <- factor(lyr_data$ClimateZoneAnd,
 
 ## mspline 14C
 lyr_data_mpspline_14c <- lyr_data %>% 
+  # filter(pro_name == "HAK1468_1.3") %>% 
   dplyr::select(id, lyr_top, lyr_bot, lyr_14c) %>% 
-  mpspline_tidy(vlow = -1000, lam = 0.5)
+  mpspline_tidy(vlow = -1000, lam = 0.5,
+                   d = c(0, 5, 15, 30, 60, 100, 200))
 
 ## mspline CORG
 lyr_data_mpspline_c <- lyr_data %>% 
   dplyr::select(id, lyr_top, lyr_bot, CORG) %>% 
-  mpspline_tidy(vlow = 0.01, vhigh = 60, lam = 0.5)
+  mpspline_tidy(vlow = 0.01, vhigh = 60, lam = 0.5,
+                d = c(0, 5, 15, 30, 60, 100, 200))
 
 ## 14C and SOC
 mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>% 
@@ -99,23 +105,24 @@ mspline_14c_c_all <- mspline_14c_c %>%
 ## 14C and depth
 
 # spline data
-mspline_14c_c_all %>% 
-  filter(LD < 102) %>% 
+p1 <- mspline_14c_c_all %>% 
+  # filter(LD < 101) %>% 
   group_by(UD) %>% 
-  summarize(median = median(lyr_14c_msp),
-            mad = mad(lyr_14c_msp)) %>% 
+  summarize(median = median(lyr_14c_msp, na.rm = TRUE),
+            mad = mad(lyr_14c_msp, na.rm = TRUE),
+            n = n()) %>% 
   ggplot(aes(x = median, y = UD)) +
   geom_ribbon(aes(xmin = median - mad, xmax = median + mad), fill = "darkgrey") +
   geom_path(color= "red", size = 2) +
-  theme_bw() +
+  theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("Delta 14C", expand = c(0,0), limits = c(-600,200),
+  scale_x_continuous("Delta 14C", expand = c(0,0), limits = c(-1000,200),
                      position = "top") +
   scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0),
-                     limits = c(100,0))
+                     limits = c(701,0))
 
 # raw data
-lyr_all %>% 
+p2 <- lyr_all %>% 
   filter(lyr_obs_date_y > 1959) %>%
   dplyr::select(id, depth, lyr_14c) %>% 
   mutate(depth_bin = cut(depth, breaks = seq(0,110,10))) %>% 
@@ -130,39 +137,47 @@ lyr_all %>%
   geom_ribbon(aes(xmin = median - mad, xmax = median + mad), fill = "darkgrey") +
   geom_path(color= "red", size = 2) +
   geom_point() +
-  theme_bw() +
+  theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("Delta 14C", expand = c(0,0), limits = c(-600,200),
                      position = "top") +
   scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0))
 
+ggarrange(p1, p2)
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_mspline_raw_avg_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+
 ## 14C and SOC
 
 # spline data
-mspline_14c_c_all %>% 
+p3 <- mspline_14c_c_all %>% 
   group_by(UD) %>% 
   summarize(median_14c = median(lyr_14c_msp),
             mad_14c = mad(lyr_14c_msp),
             median_CORG = median(CORG_msp),
             mad_CORG = mad(CORG_msp),
             n = n(),
-            n_site = n_distinct(site_name)) %>% 
+            n_site = n_distinct(site_name),
+            lower_CORG = median_CORG - mad_CORG,
+            upper_CORG = median_CORG + mad_CORG) %>% 
+  mutate(lower_CORG = if_else(lower_CORG <= 0.01, 0.01, lower_CORG)) %>% 
   ungroup() %>% 
   mutate(n_rel = n/max(n)) %>% 
   arrange(desc(median_14c)) %>% 
-  # filter(n_site > 4) %>% 
-  # filter(n_rel > 1/3) %>%
+  filter(n_site > 4) %>%
+  filter(n_rel > 1/9) %>%
   ggplot(aes(y = median_14c, x = median_CORG)) +
-  geom_errorbarh(aes(xmin = median_CORG - mad_CORG, xmax = median_CORG + mad_CORG), color = "grey") +
+  geom_errorbarh(aes(xmin = lower_CORG, xmax = upper_CORG), color = "grey") +
   geom_errorbar(aes(ymin = median_14c - mad_14c, ymax = median_14c + mad_14c), color = "grey") +
-  geom_path(color= "red", size = 2) +
-  theme_bw() +
+  geom_path(color= "red", size = 0.5) +
+  theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_y_continuous("Delta 14C", expand = c(0,0), limits = c(-1000,200)) +
   scale_x_continuous("SOC [wt-%]", trans = "log10", expand = c(0,0), limits = c(0.01, 7))
 
 # raw data
-lyr_all %>% 
+p4 <- lyr_all %>% 
   filter(lyr_obs_date_y > 1959) %>%
   mutate(depth_bin = cut_number(lyr_14c, 20)) %>% 
   extract(depth_bin, c("bot_14c", "top_14c"), "(-*[0-9]+\\.*[0-9]*),(-*[0-9]+\\.*[0-9]*)", 
@@ -186,10 +201,14 @@ lyr_all %>%
   geom_errorbar(aes(ymin = bot_14c, ymax = top_14c), color = "grey",
                 width = 0) +
   geom_path(color = "red", size = 2) +
-  theme_bw() +
+  theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_y_continuous("Delta 14C", expand = c(0,0), limits = c(-1000,305)) +
   scale_x_continuous("SOC [wt-%]", trans = "log10", expand = c(0,0), limits = c(0.01, 7))
+
+ggarrange(p3, p4)
+ggsave(file = paste0("./Figure/ISRaD_14C_C_mspline_raw_avg_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
 
 lyr_all %>% 
   filter(lyr_obs_date_y > 1959) %>%

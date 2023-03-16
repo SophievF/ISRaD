@@ -103,6 +103,7 @@ Summary statistics...
     site_name : 16
     pro_name : 16
     pro_treatment : 16
+    pro_land_cover : 10
  flux tab...0 observations
  layer tab...47 observations
     entry_name : 47
