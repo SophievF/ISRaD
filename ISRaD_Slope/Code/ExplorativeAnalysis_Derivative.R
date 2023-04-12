@@ -19,6 +19,52 @@ lyr_data_deri <- lyr_data %>%
          CORG_d2 = lead(CORG_d1, 1) - CORG_d1) %>% 
   ungroup()
 
+# SOC profile
+climate_c <- lyr_data_deri %>%
+  dplyr::group_by(ClimateZoneAnd, UD) %>% 
+  dplyr::mutate(Derivative_1 = median(CORG_d1, na.rm = TRUE),
+                Derivative_2 = median(CORG_d2, na.rm = TRUE),
+                median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+                lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+                uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+                n = n(),
+                n_site = n_distinct(site_name)) %>% 
+  distinct(ClimateZoneAnd, UD, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  dplyr::mutate(n_rel = n * 100 / max(n))
+
+climate_c$ClimateZoneAnd <- factor(climate_c$ClimateZoneAnd,
+                                   levels = c("volcanic soils", "tundra/polar", "cold temperate", 
+                                              "warm temperate", "arid", "tropical"))
+
+climate_c %>% 
+  dplyr::filter(n > 4 & n_rel > 33 & n_site > 2) %>% 
+  ggplot() + 
+  geom_path(aes(y = UD, x = median_c, color = ClimateZoneAnd), linewidth = 2) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = UD, 
+                     color = ClimateZoneAnd), alpha = 0.3) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "top",
+        legend.background = element_blank()) +
+  scale_y_reverse("Depth [cm]", expand = c(0,0), limits = c(100,0)) +
+  scale_x_continuous("Soil organic carbon [wt-%]", expand = c(0,0),
+                     limits = c(0,30)) +
+  scale_color_discrete("Profile grouping")
+
+ggsave(file = paste0("./Figure/ISRaD_msp_SOC_climate_depth_profile_deriv_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+c_profile_sum <- climate_c %>% 
+  group_by(ClimateZoneAnd, UD) %>% 
+  # dplyr::filter(n > 4 & n_rel > 33 & n_site > 2) %>% 
+  dplyr::select(n, n_site, n_rel, median_c, lci_c, uci_c, Derivative_1, Derivative_2) %>% 
+  rename(n_profile = n) %>% 
+  arrange(ClimateZoneAnd)
+write_csv(c_profile_sum, 
+          file = paste0("./Data/ISRaD_msp_SOC_climate_depth_profile_deriv_sum_", 
+                        Sys.Date(), ".csv"))  
+
 # Example
 lyr_data_deri %>% 
   filter(id == "Baisden_2007_China hat_China hat_122") %>% 
@@ -40,21 +86,7 @@ lyr_data_deri %>%
   theme_bw()
 
 ## Climate grouping
-# by depth
-climate_depth <- lyr_data_deri %>%
-  group_by(ClimateZoneAnd, UD) %>% 
-  mutate(Derivative_1 = median(CORG_d1, na.rm = TRUE),
-         Derivative_2 = median(CORG_d2, na.rm = TRUE),
-         n = n(),
-         n_site = n_distinct(site_name)) %>% 
-  ungroup(UD) %>%
-  mutate(n_rel = n * 100 / max(n))
-
-climate_depth$ClimateZoneAnd <- factor(climate_depth$ClimateZoneAnd,
-                                       levels = c("volcanic soils", "tundra/polar", "cold temperate", 
-                                                  "warm temperate", "arid", "tropical"))
-
-c_depth_1 <- climate_depth %>% 
+c_depth_1 <- climate_c %>% 
   drop_na() %>% 
   filter(n > 4 & n_rel > 33 & n_site > 3) %>% 
   ggplot() + 
@@ -70,7 +102,7 @@ c_depth_1 <- climate_depth %>%
   scale_y_reverse("Depth [cm]", limits = c(100,0), expand = c(0,0)) +
   scale_color_discrete("Profile grouping")
 
-c_depth_2 <- climate_depth %>% 
+c_depth_2 <- climate_c %>% 
   drop_na() %>% 
   filter(n > 4 & n_rel > 33 & n_site > 2) %>% 
   ggplot() + 

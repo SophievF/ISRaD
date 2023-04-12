@@ -151,16 +151,8 @@ lyr_data_clean %>%
 
 # Gap-fill missing global data with reported local data (or vice-versa)
 lyr_data_clean %>% 
-  count(pro_usda_soil_order)
-lyr_data_clean %>% 
-  count(pro_0.5_USDA_soilorder)
-lyr_data_clean %>% 
-  count(pro_KG_present_long)
-lyr_data_clean %>% 
-  count(pro_KG_present_short)
-
-lyr_data_clean %>% 
-  skimr::skim(lyr_clay_tot_psa)
+  skimr::skim_without_charts(pro_MAP, pro_MAT, pro_usda_soil_order,
+                             lyr_clay_tot_psa, pro_KG_present_long)
 
 lyr_data_clean %>%
   filter(is.na(pro_KG_present_long)) %>% 

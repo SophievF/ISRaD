@@ -138,3 +138,6 @@ summary(mspline_14c_c_all$pro_clay_10_cm_SG)
 
 write_csv(mspline_14c_c_all, file = paste0("./Data/ISRaD_flat_splined_filled_", 
                                            Sys.Date(), ".csv"))
+
+mspline_14c_c_all %>% 
+  skimr::skim_without_charts(pro_MAP, pro_MAT, clay_msp)

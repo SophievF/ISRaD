@@ -192,7 +192,7 @@ c1_14c_c <- climate_all_14c_c %>%
   filter(ClimateZoneAnd != "volcanic soils") %>% 
   filter(n > 4 & n_rel > 33) %>% 
   ggplot() + 
-  geom_path(aes(x = median_c, y = median_14c, color = ClimateZoneAnd), size = 2) +
+  geom_path(aes(x = median_c, y = median_14c, color = ClimateZoneAnd), linewidth = 2) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
                     color = ClimateZoneAnd), alpha = 0.3) +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
@@ -243,7 +243,7 @@ depth_sum <- mineral_all_14c_c %>%
 m1_14c_c <- mineral_all_14c_c %>% 
   filter(n > 4 & n_rel > 33) %>% 
   ggplot() + 
-  geom_path(aes(x = median_c, y = median_14c, color = MineralType), size = 2) +
+  geom_path(aes(x = median_c, y = median_14c, color = MineralType), linewidth = 2) +
   geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
                     color = MineralType), alpha = 0.3) +
   geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
