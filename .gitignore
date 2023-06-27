@@ -10,3 +10,8 @@ ISRaD.Rproj
 # Folders
 _site/
 .sass-cache/
+
+.jpeg
+.svg
+.png
+.tif
