@@ -3,35 +3,124 @@
 # Sophie von Fromm #
 # 01/06/2022 #
 
-library(ISRaD)
+# library(ISRaD)
 library(tidyverse)
 library(ggpubr)
 
 #Load filtered lyr data
-lyr_data <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_", Sys.Date()))
+lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2022-10-05"))
+
+lyr_all %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
+
+lyr_data <- lyr_all %>% 
+  filter(lyr_obs_date_y > 1959) %>% 
+  group_by(id) %>%
+  #Filter for studies that have more than 2 depth layers
+  filter(n() > 2) %>%
+  arrange(depth, .by_group = TRUE) %>% 
+  ungroup() %>% 
+  mutate(ClimateZone = case_when(
+    entry_name == "Gentsch_2018" ~ "polar",
+    pro_usda_soil_order == "Gelisols" ~ "polar",
+    str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
+    str_detect(pro_KG_present_long, "Temperate") ~ "temperate",
+    str_detect(pro_KG_present_long, "Cold") ~ "cold",
+    str_detect(pro_KG_present_long, "Polar") ~ "polar",
+    str_detect(pro_KG_present_long, "Arid") ~ "arid",
+  )) %>% 
+  ungroup() %>% 
+  #remove for now: need to fix depth
+  filter(entry_name != "Fernandez_1993a")
 
 lyr_data %>% 
-  count(entry_name)
+  count(entry_name) %>% view()
+
+lyr_data %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 names(lyr_data)
 
+## Check climate
+lyr_data %>% 
+  filter(pro_country == "Russia") %>% 
+  count(entry_name, ClimateZone, pro_usda_soil_order)
+
+lyr_data %>% 
+  filter(pro_usda_soil_order == "Gelisols") %>% 
+  count(entry_name, ClimateZone, pro_country, pro_usda_soil_order)
+
 ## Mapping sampling locations ##
-library("rnaturalearth")
-library("rnaturalearthdata")
-library(sf)
 
 world <- map_data("world") %>% 
   filter(region != "Antarctica")
 
+library(raster)
+climate_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/Beck_KG_V1/Beck_KG_V1_present_0p083.tif"
+climate_raster <- raster::raster(climate_dir)
+
+plot(climate_raster)
+
+#reclassify climate raster
+recal <- c(0,3,1, 3,7,2, 7,16,3, 16,28,4, 28,30,5)
+recal_mat <- matrix(recal, ncol = 3, byrow = TRUE)
+
+climate_grp <- reclassify(climate_raster, recal_mat)
+plot(climate_grp)
+
+# convert to a df for plotting in two steps,
+# First, to a SpatialPointsDataFrame
+climate_pts <- rasterToPoints(climate_grp, spatial = TRUE)
+# Then to a 'conventional' dataframe
+climate_df  <- data.frame(climate_pts) %>% 
+  rename(ClimateZone = Beck_KG_V1_present_0p083) %>% 
+  filter(ClimateZone != 0) %>% 
+  mutate(ClimateZone = case_when(
+    ClimateZone == 1 ~ "tropical",
+    ClimateZone == 2 ~ "arid",
+    ClimateZone == 3 ~ "temperate",
+    ClimateZone == 4 ~ "cold",
+    ClimateZone == 5 ~ "polar"
+  ))
+
+rm(climate_pts)
+
+summary(climate_df)
+
 ggplot() +
+  geom_raster(data = climate_df, 
+              aes(x = x, y = y, fill = ClimateZone), alpha = 0.7) +
+  geom_point(data = lyr_data, 
+             aes(x = pro_long, y = pro_lat),
+             fill = "black", size = 2, shape = 21, color = "white") +
+  theme_bw(base_size = 16) +
+  theme(rect = element_blank(),
+        panel.grid = element_blank(),
+        axis.ticks = element_line(color = "black"),
+        axis.text = element_text(color = "black"),
+        axis.line = element_line(color = "black"),
+        legend.position = c(0.1,0.3)) +
+  scale_x_continuous("", labels = c("100°W", "0", "100°E"), expand = c(0,0),
+                     breaks = c(-100,0,100), limits = c(-170,180)) +
+  scale_y_continuous("",labels = c("50°S", "0", "50°N"), expand = c(0,0),
+                     breaks = c(-50,0,50), limits = c(-55,80)) +
+  scale_fill_viridis_d(direction = -1)
+ggsave(file = paste0("./Figure/ISRaD_14C_Climate_map_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+  
+ggplot() +  
   geom_map(
     data = world, map = world,
     aes(long, lat, map_id = region),
-    color = "white", fill = "lightgrey")  +
+    color = "white", fill = "grey")  +
   geom_point(data = lyr_data, 
              aes(x = pro_long, y = pro_lat),
-             color = "#4D36C6", shape = 1, size = 3) +
-  theme_bw(base_size = 14) +
+             fill = "#116656", size = 2, shape = 21, color = "white") +
+  theme_bw(base_size = 16) +
   theme(rect = element_blank(),
         panel.grid = element_blank(),
         axis.ticks = element_line(color = "black"),
@@ -41,40 +130,104 @@ ggplot() +
                      breaks = c(-100,0,100), limits = c(-160,180)) +
   scale_y_continuous("",labels = c("50°S", "0", "50°N"), 
                      breaks = c(-50,0,50), limits = c(-55,80))
+ggsave(file = paste0("./Figure/ISRaD_14C_map_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+lyr_data %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
 
 ## Data exploration ##
+
+# Data distribution
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ggplot(aes(x = pro_usda_soil_order, fill = site_name)) +
+  geom_bar(color = "black") +
+  theme_bw(base_size = 16) +
+  facet_wrap(~ClimateZone) +
+  theme(axis.text = element_text(color = "black"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none",
+        panel.grid.minor = element_blank()) +
+  scale_x_discrete("") +
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,65),
+                     breaks = seq(0,65,20))
+ggsave(file = paste0("./Figure/ISRaD_climate_soiltype_dis_usda_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+lyr_data %>% 
+  group_by(ClimateZone) %>% 
+  summarise(n_studies = n_distinct(entry_name),
+            n_sites = n_distinct(site_name),
+            n_profiles = n_distinct(id))
+
+#Andisols are driving patterns in temperate regions
+lyr_data %>% 
+  filter(ClimateZone == "temperate" & pro_usda_soil_order == "Andisols") %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ungroup() %>% 
+  count(entry_name)
+
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ggplot(aes(x = pro_usda_soil_order, fill = site_name)) +
+  geom_bar(color = "black") +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_discrete("") +
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,80))
+
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  ggplot(aes(x = pro_wrb_soil_order, fill = site_name)) +
+  geom_bar(color = "black") +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_discrete("") +
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,100))
 
 #lyr_14c
 plotly::ggplotly(
   lyr_data %>% 
     ggplot(aes(x = depth, y = lyr_14c, group = entry_name)) + 
-    geom_point(size = 3, shape = 21) +
+    geom_point(aes(), size = 3, shape = 21) +
     theme_bw(base_size = 16) +
     theme(axis.text = element_text(color = "black")) +
     scale_x_continuous("Depth [cm]", expand = c(0.01,0.01)) +
-    scale_y_continuous(limits = c(-1505,305)) 
-)
-
-#lyr_dd14c
-plotly::ggplotly(
-  lyr_data %>% 
-    ggplot(aes(x = depth, y = lyr_dd14c, group = entry_name)) + 
-    geom_point(size = 3, shape = 21) +
-    theme_bw(base_size = 16) +
-    theme(axis.text = element_text(color = "black")) +
-    scale_x_continuous("Depth [cm]", expand = c(0.01,0.01)) +
-    scale_y_continuous(limits = c(-1505,305)) 
+    scale_y_continuous() 
 )
 
 # Density distribution
+p0 <- lyr_data %>% 
+  ggplot(aes(x = depth, y = lyr_14c)) + 
+  geom_hex(color = NA, binwidth = c(10,50)) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("Depth [cm]") +
+  scale_y_continuous(limits = c(-1005,305)) +
+  scale_fill_viridis_c(trans = "log10", limits = c(1,350))
+
 p1 <- lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_14c)) + 
   geom_hex(color = NA, binwidth = c(0.1,50)) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_y_continuous(limits = c(-1505,305)) +
-  scale_fill_viridis_c(trans = "log10")
+  scale_y_continuous(limits = c(-1005,305)) +
+  scale_fill_viridis_c(trans = "log10", limits = c(1,350))
 
 p2 <- lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_dd14c)) + 
@@ -85,21 +238,25 @@ p2 <- lyr_data %>%
   scale_y_continuous(limits = c(-1505,305)) +
   scale_fill_viridis_c(trans = "log10")
 
-ggarrange(p1, p2, common.legend = TRUE)
+ggarrange(p0, p1, common.legend = TRUE)
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_depth_hex_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 # Colored by sampling year
 p1 <- lyr_data %>% 
   mutate(sampl_yr = cut(lyr_obs_date_y,
                         breaks = c(1899,1960,1984,1995,1999,2009,2012,2018))) %>% 
-  ggplot(aes(y = depth, x = lyr_14c,
+  ggplot(aes(x = depth, y = lyr_14c,
              fill = sampl_yr)) + 
   geom_point(aes(group = entry_name),
              size = 5, alpha = 0.8, shape = 21) +
-  theme_bw(base_size = 16) +
+  theme_classic(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_y_reverse("Depth [cm]", expand = c(0.01,0.01)) +
-  scale_x_continuous(limits = c(-1505,305)) +
+  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) +
+  scale_y_continuous(limits = c(-1005,305)) +
   scale_fill_viridis_d()
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_yr_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 p2 <- lyr_data %>% 
   mutate(sampl_yr = cut(lyr_obs_date_y,
@@ -110,7 +267,7 @@ p2 <- lyr_data %>%
              size = 5, alpha = 0.8, shape = 21) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
-  scale_y_reverse("Depth [cm]", expand = c(0.01,0.01)) +
+  scale_y_reverse("Depth [cm]") +
   scale_x_continuous(limits = c(-1505,305)) +
   scale_fill_viridis_d()
 
@@ -124,10 +281,36 @@ lyr_data %>%
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("Depth [cm]") +
   scale_y_continuous("SOC [wt-%]", trans = "log10") +
-  scale_fill_viridis_c("Delta14C", limits = c(-1005,250),
+  scale_fill_viridis_c("Delta14C", limits = c(-1005,255),
                        option = "A") +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
+
+lyr_data %>% 
+  ggplot(aes(x = depth, y = lyr_14c)) +
+  geom_line(aes(group = id), alpha = 0.5) +
+  geom_smooth(method = "gam", formula = y ~ s(log(x)),
+              fill = "lightblue") +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("Depth [cm]", expand = c(0,0), limits = c(0,205)) +
+  scale_y_continuous("Delta14C", expand = c(0,0), limits = c(-1000,350),
+                     breaks = seq(-1000,250,250)) 
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_profile_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+lyr_data %>%  
+  group_by(id) %>% 
+  arrange(depth) %>% 
+  ggplot(aes(y = lyr_14c, x = CORG)) +
+  geom_path(aes(group = id), alpha = 0.5) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10") +
+  scale_y_continuous("Delta14C", expand = c(0,0), limits = c(-1000,350),
+                     breaks = seq(-1000,250,250))
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_profile_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
 lyr_data %>% 
   ggplot(aes(y = lyr_14c, x = CORG, color = pro_BIO12_mmyr_WC2.1)) +
@@ -135,7 +318,7 @@ lyr_data %>%
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black")) +
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
-  scale_color_viridis_c("MAP [mm]", trans = "log10")
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1)
 
 lyr_data %>% 
   ggplot(aes(y = lyr_14c, x = CORG, color = pro_BIO1_C_WC2.1)) +
@@ -145,99 +328,56 @@ lyr_data %>%
   scale_x_continuous("SOC [wt-%]", trans = "log10") +
   scale_color_viridis_c("MAT [C]")
 
-summary(lyr_data$pro_BIO12_mmyr_WC2.1)
-
 lyr_data %>% 
-  count(pro_KG_present) %>% 
-  view()
-
-lyr_data %>% 
-  filter(pro_KG_present == 0) %>% 
-  count(entry_name)
-
-lyr_data_KG <- lyr_data %>% 
-  mutate(pro_KG_present_reclas = case_when(
-    pro_KG_present == 1 ~ "Tropical, rainforest",
-    pro_KG_present == 2 ~ "Tropical, monsoon",
-    pro_KG_present == 3 ~ "Tropical, savannah",
-    pro_KG_present == 5 ~ "Arid, desert, cold",
-    pro_KG_present == 6 ~ "Arid, steppe, hot",
-    pro_KG_present == 7 ~ "Arid, steppe, cold",
-    pro_KG_present == 8 ~ "Temperate, dry summer, hot summer",
-    pro_KG_present == 9 ~ "Temperate, dry summer, warm summer",
-    pro_KG_present == 11 ~ "Temperate, dry winter, hot summer",
-    pro_KG_present == 12 ~ "Temperate, dry winter, warm summer",
-    pro_KG_present == 14 ~ "Temperate, no dry season, hot summer",
-    pro_KG_present == 15 ~ "Temperate, no dry season, warm summer",
-    pro_KG_present == 18 ~ "Cold, dry summer, warm summer",
-    pro_KG_present == 19 ~ "Cold, dry summer, cold summer",
-    pro_KG_present == 22 ~ "Cold, dry winter, warm summer",
-    pro_KG_present == 23 ~ "Cold, dry winter, cold summer",
-    pro_KG_present == 25 ~ "Cold, no dry season, hot summer",
-    pro_KG_present == 26 ~ "Cold, no dry season, warm summer",
-    pro_KG_present == 27 ~ "Cold, no dry season, cold summer",
-    pro_KG_present == 29 ~ "Polar, tundra",
-    #one study has no climate zone; assign manually
-    pro_KG_present == 0 ~ "Polar, tundra"
-  ))
-
-lyr_data_KG %>% 
-  filter(is.na(pro_KG_present_reclas)) %>% 
-  count(entry_name)
-
-lyr_data_KG %>% 
   filter(depth <= 200) %>% 
   ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
-  facet_wrap(~pro_KG_present_reclas) +
+  facet_wrap(~pro_KG_present_long) +
   theme_bw(base_size = 12) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("Depth [cm]") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
-lyr_data_KG %>% 
+lyr_data %>% 
   ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
-  facet_wrap(~pro_KG_present_reclas) +
+  facet_wrap(~pro_KG_present_long) +
   theme_bw(base_size = 12) +
   theme(axis.text = element_text(color = "black"),
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("SOC", trans = "log10") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
 
-lyr_data_soil <- lyr_data_KG %>% 
-  mutate(pro_usda_soil_order = case_when(
-    pro_usda_soil_order == 150 ~ "Gelisols",
-    pro_usda_soil_order == 151 ~ "Histosols",
-    pro_usda_soil_order == 152 ~ "Spodosols",
-    pro_usda_soil_order == 153 ~ "Andisols",
-    pro_usda_soil_order == 154 ~ "Oxisols",
-    pro_usda_soil_order == 155 ~ "Vertisols",
-    pro_usda_soil_order == 156 ~ "Aridisols",
-    pro_usda_soil_order == 157 ~ "Ultisols",
-    pro_usda_soil_order == 158 ~ "Mollisols",
-    pro_usda_soil_order == 159 ~ "Alfisols",
-    pro_usda_soil_order == 160 ~ "Inceptisols",
-    pro_usda_soil_order == 161 ~ "Entisols",
-    TRUE ~ pro_usda_soil_order
-  ))
-
-lyr_data_soil %>% 
-  filter(is.na(pro_usda_soil_order)) %>% 
-  count(entry_name)
-
-lyr_data_soil %>% 
+lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
-  filter(depth <= 200) %>% 
+  filter(depth <= 200) %>%
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
+  #reclassify soil type Schuur_2001: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Guillet_1988: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Guillet_1988",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Torn_1997: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Torn_1997",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Kramer_2012: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Kramer_2012",
+  #                                      "Andisols")) %>%
   ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
@@ -247,12 +387,18 @@ lyr_data_soil %>%
         strip.background = element_rect(fill =  NA)) +
   scale_x_continuous("Depth [cm]") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
-                               ticks.linewidth = 2))
+                               ticks.linewidth = 2)) +
+  geom_smooth()
+ggsave(file = paste0("./Figure/ISRaD_14C_depth_soiltype_MAP_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
 
-lyr_data_soil %>% 
+lyr_data %>% 
   drop_na(pro_usda_soil_order) %>% 
+  filter(depth <= 200) %>%
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
   ggplot(aes(x = CORG, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
   geom_point(shape = 21, size = 4, alpha = 0.7) +
   facet_wrap(~pro_usda_soil_order) +
@@ -260,8 +406,219 @@ lyr_data_soil %>%
   theme(axis.text = element_text(color = "black"),
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill =  NA)) +
-  scale_x_continuous("SOC", trans = "log10") +
+  scale_x_continuous("SOC [%]", trans = "log10") +
   scale_y_continuous("Delat14C") +
-  scale_fill_viridis_c("MAP [mm]", trans = "log10") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
   guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
                                ticks.linewidth = 2))
+
+plotly::ggplotly(lyr_data %>% 
+  drop_na(pro_usda_soil_order) %>%
+  # Filter for studies that have more than 2 depth layers
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
+  #reclassify soil type Schuur_2001: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Schuur_2001" & pro_usda_soil_order == "Inceptisols",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Guillet_1988: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Guillet_1988",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Torn_1997: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Torn_1997",
+  #                                      "Andisols")) %>% 
+  # #reclassify soil type Kramer_2012: all Andisols
+  # mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+  #                                      entry_name == "Kramer_2012",
+  #                                      "Andisols")) %>% 
+  ggplot(aes(x = CORG, y = lyr_14c, group = entry_name)) +
+  geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3, alpha = 0.7) +
+  facet_wrap(~pro_usda_soil_order) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("SOC [%]", trans = "log10") +
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
+                                ticks.linewidth = 2))
+)
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+lyr_data %>% 
+  drop_na(pro_usda_soil_order) %>%
+  filter(pro_usda_soil_order != "Aridisols",
+         pro_usda_soil_order != "Histosols") %>%
+  #reclassify soil type Schuur_2001: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Schuur_2001" & 
+                                         pro_usda_soil_order == "Inceptisols",
+                                       "Andisols")) %>%
+  #reclassify soil type Guillet_1988: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Guillet_1988",
+                                       "Andisols")) %>%
+  #reclassify soil type Torn_1997: all Andisols
+  mutate(pro_usda_soil_order = replace(pro_usda_soil_order,
+                                       entry_name == "Torn_1997",
+                                       "Andisols")) %>%
+  ggplot(aes(x = CORG, y = lyr_14c)) +
+  # geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3) +
+  geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "x",
+            size = 1) +
+  facet_wrap(~pro_usda_soil_order) +
+  theme_bw(base_size = 12) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("SOC [%]", trans = "log10") +
+  # geom_smooth(orientation = "y", method = "gam") +
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
+                               ticks.linewidth = 2))
+ggsave(file = paste0("./Figure/ISRaD_14C_SOC_soiltype_MAP_", Sys.Date(),
+                     ".jpeg"), width = 11, height = 6)
+
+
+### Add HLZ data
+library(sf)
+library(tmap)
+HLZ_directory <- "D:/Sophie/PhD/AfSIS_GlobalData/HLZ/holdrid/holdrid.shp"
+
+HLZ <- sf::st_read(HLZ_directory)
+st_crs(HLZ) <- 4326
+
+lyr_data_sf <- sf::st_as_sf(lyr_data, 
+                            coords = c("pro_long", "pro_lat"), 
+                            crs = 4326)
+
+tmap_mode("view")
+tm_shape(HLZ, projection = 4326) +
+  tm_polygons(col = "DESC") +
+  tm_shape(lyr_data_sf) +
+  tm_dots(popup.vars = "id")
+
+lyr_data_HLZ_sf <- sf::st_join(lyr_data_sf, HLZ, 
+                               left = TRUE)
+
+lyr_data_HLZ_NA <- lyr_data_HLZ_sf %>% 
+  tibble() %>% 
+  dplyr::select(-c(geometry, AREA:FREQUENCY, SYMBOL)) %>% 
+  rename(HLZ_Zone = DESC)
+
+names(lyr_data_HLZ_NA)
+
+lyr_data_HLZ_NA %>% 
+  filter(is.na(HLZ_Zone)) %>% 
+  count(id) %>% view()
+
+# lyr_data_HLZ_NA %>% 
+#   filter(entry_name == "Kramer_2012") %>% 
+#   count(id, HLZ_Zone)
+# 
+# lyr_data_HLZ_NA %>% 
+#   filter(entry_name == "Torn_1997") %>% 
+#   filter(is.na(HLZ_Zone)) %>% 
+#   count(id)
+# 
+# tmap_mode("view")
+# tm_shape(HLZ, projection = 4326) +
+#   tm_polygons(col = "DESC") +
+#   tm_shape(lyr_data_sf[(lyr_data_sf$entry_name == "Crow_2015"|
+#                           lyr_data_sf$entry_name == "Cusack_2012"|
+#                           lyr_data_sf$entry_name == "Kramer_2012"|
+#                           lyr_data_sf$entry_name == "Torn_1997"),]) +
+#   tm_dots(popup.vars = "id")
+
+#Manually assign missing HLZ
+lyr_data_HLZ <- lyr_data_HLZ_NA %>% 
+  mutate(HLZ_Zone = ifelse(entry_name == "Basile_Doelsch_2005", 
+                            "Subtropical dry forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Heckman_2018_CA_Mollisol_SCT2", 
+                           "Warm temperate dry forest", HLZ_Zone)) %>%
+  mutate(HLZ_Zone = ifelse(id == "Heckman_2018_MI_Spodosol_MiB1", 
+                           "Cool temperate moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Lassey_1996_Westland_Hokotika", 
+                           "Cool temperate wet forest", HLZ_Zone)) %>% 
+  #Could also be "Cool temperate wet forest"
+  mutate(HLZ_Zone = ifelse(id == "Lassey_1996_Hawera_Whareroa road", 
+                           "Warm temperate moist forest", HLZ_Zone)) %>%
+  #Could also be "Cool temperate steppe"
+  mutate(HLZ_Zone = ifelse(grepl("Lawrence_2021_Santa Cruz_SC", id),
+                           "Warm temperate dry forest", HLZ_Zone)) %>%
+  mutate(HLZ_Zone = ifelse(grepl("McFarlane_2013_MI-Coarse UMBS", id),
+                           "Cool temperate moist forest", HLZ_Zone)) %>%
+  mutate(HLZ_Zone = ifelse(grepl("Sanaiotti_2002_Alter do Chão_Alter do Chão", id),
+                           "Subtropical moist forest", HLZ_Zone)) %>%
+  #Could also be "Subtropical moist forest" or "Subtropical dry forest"
+  mutate(HLZ_Zone = ifelse(entry_name == "Schwartz_1992", 
+                           "Tropical dry forest", HLZ_Zone)) %>%
+  #Most of Hawaii has missing data
+  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_AND_EUC_Composite", id),
+                           "Warm temperate wet forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_MOL_AG_Composite", id), 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(grepl("Crow_2015_OX_AG_Composite", id), 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(entry_name == "Cusack_2012", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(grepl("Grant_2022_Kohala", id), 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Kramer_2012_Pololu_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Amalu-precipitation_Amalu-precipitation_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kohala (150ky)_Kohala (150ky)_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kokee (4.1my)_Kokee (4.1my)_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_1997_Kolekole (1.4my)_Kolekole (1.4my)_profile_1", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kohala_Kohala_150", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kokee, Kauai_Kokee_Kauai_4100", 
+                           "Subtropical moist forest", HLZ_Zone)) %>% 
+  mutate(HLZ_Zone = ifelse(id == "Torn_2005_Kolekole, Molokai_Kolekole_Molokai_1400", 
+                           "Subtropical moist forest", HLZ_Zone)) 
+
+lyr_data_HLZ %>% 
+  filter(is.na(HLZ_Zone)) %>% 
+  count(id) %>% view()
+
+lyr_data_HLZ %>% 
+  count(HLZ_Zone)
+
+lyr_data_HLZ %>% 
+  filter(depth <= 200) %>%
+  ggplot(aes(x = depth, y = lyr_14c, fill = pro_BIO12_mmyr_WC2.1)) + 
+  geom_point(shape = 21, size = 4, alpha = 0.7) +
+  facet_wrap(~HLZ_Zone) +
+  theme_bw(base_size = 12) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("Depth [cm]") +
+  scale_y_continuous("Delta14C") +
+  scale_fill_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(fill = guide_colorbar(barheight = 10, frame.colour = "black", 
+                               ticks.linewidth = 2))
+
+lyr_data_HLZ %>% 
+  ggplot(aes(x = CORG, y = lyr_14c)) +
+  geom_point(aes(color = pro_BIO12_mmyr_WC2.1), size = 3) +
+  # geom_line(aes(group = id, color = pro_BIO12_mmyr_WC2.1), orientation = "y", 
+  #           alpha = 0.7) +
+  facet_wrap(~HLZ_Zone) +
+  theme_bw(base_size = 12) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill =  NA)) +
+  scale_x_continuous("SOC [%]", trans = "log10") +
+  # geom_smooth(orientation = "y", method = "gam") +
+  scale_color_viridis_c("MAP [mm]", trans = "log10", direction = -1) +
+  guides(color = guide_colorbar(barheight = 10, frame.colour = "black", 
+                                ticks.linewidth = 2))
+
