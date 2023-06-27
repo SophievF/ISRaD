@@ -11,3 +11,12 @@ ISRaD.Rproj
 _site/
 .sass-cache/
 *.jpeg
+*.tif
+*.png
+*.svg
+*.RData
+ISRaD_Slope/Data/ISRaD_RF_all_default_ale_14c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_default_ale_c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_test_ale_14c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_test_ale_c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_test_ice_14c_2023-02-17
