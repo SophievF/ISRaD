@@ -10,3 +10,4 @@ ISRaD.Rproj
 # Folders
 _site/
 .sass-cache/
+*.tif
