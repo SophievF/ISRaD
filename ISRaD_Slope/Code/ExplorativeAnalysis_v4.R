@@ -12,81 +12,108 @@ library(mpspline2)
 #Load filtered lyr data
 lyr_all <- readRDS(paste0(getwd(), "/Data/ISRaD_lyr_data_filtered_2023-02-08"))
 
-# lyr_all %>% 
-#   summarise(n_studies = n_distinct(entry_name),
-#             n_sites = n_distinct(site_name),
-#             n_profiles = n_distinct(id))
-# 
-# lyr_data <- lyr_all %>% 
-#   # filter(lyr_obs_date_y > 1959) %>% 
-#   group_by(id) %>%
-#   #Filter for studies that have more than 2 depth layers
-#   filter(n() > 2) %>%
-#   arrange(depth, .by_group = TRUE) %>% 
-#   ungroup() %>% 
-#   mutate(ClimateZone = case_when(
-#     entry_name == "Gentsch_2018" ~ "tundra/polar",
-#     pro_usda_soil_order == "Gelisols" ~ "tundra/polar",
-#     pro_usda_soil_order == "Aridisols" ~ "arid",
-#     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
-#     str_detect(pro_KG_present_long, "Temperate") ~ "warm temperate",
-#     str_detect(pro_KG_present_long, "Cold") ~ "cold temperate",
-#     str_detect(pro_KG_present_long, "Polar") ~ "tundra/polar",
-#     str_detect(pro_KG_present_long, "Arid") ~ "arid",
-#   )) %>% 
-#   mutate(ClimateZoneAnd = case_when(
-#     entry_name == "Gentsch_2018" ~ "tundra/polar",
-#     pro_usda_soil_order == "Gelisols" ~ "tundra/polar",
-#     pro_usda_soil_order == "Andisols" ~ "volcanic soils",
-#     pro_usda_soil_order == "Aridisols" ~ "arid",
-#     str_detect(pro_KG_present_long, "Tropical") ~ "tropical",
-#     str_detect(pro_KG_present_long, "Temperate") ~ "warm temperate",
-#     str_detect(pro_KG_present_long, "Cold") ~ "cold temperate",
-#     str_detect(pro_KG_present_long, "Polar") ~ "tundra/polar",
-#     str_detect(pro_KG_present_long, "Arid") ~ "arid",
-#   )) %>% 
-#   mutate(MineralType = case_when(
-#     pro_usda_soil_order == "Andisols" ~ "amorphous",
-#     pro_usda_soil_order == "Oxisols" ~ "low-activity clay",
-#     pro_usda_soil_order == "Ultisols" ~ "low-activity clay",
-#     TRUE ~ "high-activity clay"
-#   )) %>% 
-#   #remover overlapping depth layer in Fernandez_1993
-#   filter(lyr_name != "B_61.1-122.2") %>% 
-#   mutate(pro_MAT_mod = case_when(
-#     is.na(pro_MAT) ~ pro_BIO1_C_WC2.1,
-#     TRUE ~ pro_MAT
-#   )) %>% 
-#   mutate(pro_MAP_mod = case_when(
-#     is.na(pro_MAP) ~ pro_BIO12_mmyr_WC2.1,
-#     TRUE ~ pro_MAP
-#   ))
+# Load filtered and splined data
+lyr_data <- read_csv("./Data/ISRaD_flat_splined_filled_2023-03-09.csv") %>% 
+  #remove layers that have CORG > 20
+  filter(CORG_msp <= 20)
 
-lyr_data <- read_csv("./Data/ISRaD_flat_splined_filled_2023-03-09.csv")
+# Check data
+lyr_data %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id))
 
 lyr_data %>% 
-  summarise(n_studies = n_distinct(entry_name),
-            n_sites = n_distinct(site_name),
-            n_profiles = n_distinct(id))
+  dplyr::select(lyr_14c_msp, CORG_msp, UD, pro_MAT_mod, pro_AI, lyr_clay_mod) %>% 
+  cor()
 
-names(lyr_data)
-
+# Convert characters into factors
 lyr_data$ClimateZone <- factor(lyr_data$ClimateZone,
-                               levels = c("tundra/polar", "cold temperate", "arid",
-                                          "warm temperate", "tropical"))
+                               levels = c("tundra/polar", "cold temperate",
+                                          "warm temperate", "tropical", "arid"))
 
 lyr_data$ClimateZoneAnd <- factor(lyr_data$ClimateZoneAnd,
-                                  levels = c("volcanic soils", "tundra/polar", "cold temperate", 
-                                             "warm temperate", "arid","tropical"))
-
-## Check climate
-lyr_data %>% 
-  filter(pro_country == "Russia") %>% 
-  count(entry_name, ClimateZone, pro_usda_soil_order)
+                                  levels = c("volcanic soils", "tundra/polar", 
+                                             "cold temperate", "warm temperate", 
+                                             "tropical", "arid"))
 
 lyr_data %>% 
-  filter(pro_usda_soil_order == "Gelisols") %>% 
-  count(entry_name, ClimateZone, pro_country, pro_usda_soil_order)
+  group_by(ClimateZone) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country))
+
+lyr_data %>% 
+  group_by(ClimateZoneAnd) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country))
+
+lyr_data %>% 
+  group_by(pro_land_cover) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country))
+
+lyr_data %>% 
+  group_by(MineralType) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country))
+
+lyr_data %>% 
+  group_by(pro_usda_soil_order) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country))
+
+lyr_data %>% 
+  group_by(pro_country) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country)) %>% view()
+
+
+##Re-group soil types
+lyr_data <- lyr_data %>% 
+  mutate(MineralGroupsNew = case_when(
+    MineralType == "low-activity clay" ~ "kaolinite",
+    MineralType == "amorphous" ~ "amorphous",
+    pro_usda_soil_order == "Mollisols" ~ "vermiculite/smectite",
+    pro_usda_soil_order == "Spodosols" ~ "vermiculite/smectite",
+    pro_usda_soil_order == "Vertisols" ~ "vermiculite/smectite",
+    TRUE ~ "illite/mica"
+  ))
+
+lyr_data %>% 
+  group_by(MineralGroupsNew) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country))
+
+lyr_data$MineralGroupsNew <- factor(lyr_data$MineralGroupsNew,
+                                    levels = c("amorphous", 
+                                               "illite/mica",
+                                               "vermiculite/smectite",
+                                               "kaolinite"))
+
+## Define color code 
+# cold, warm, tropical, arid
+color_climate_wo_polar <- c("#762a83", "#7fbf7b", "#1b7837", "#dfc27d")
+# polar, cold, warm, tropical, arid
+color_climate <- c("#af8dc3", "#762a83", "#7fbf7b", "#1b7837", "#dfc27d")
+# amorphous, polar, cold, warm, tropical, arid
+color_climate_w_amorph <- c("#225ea8", "#af8dc3", "#762a83", "#7fbf7b", "#1b7837", 
+                            "#dfc27d")
+# amorphous, high-activity clay, low-activity clays
+color_mineral <- c("#225ea8", "#41b6c4", "#a1dab4")
 
 ## Mapping sampling locations ##
 
@@ -287,8 +314,48 @@ lyr_data %>%
         legend.position = "none",
         panel.grid.minor = element_blank()) +
   scale_x_discrete("") +
-  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,65),
-                     breaks = seq(0,65,20))
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,60),
+                     breaks = seq(0,60,20))
+
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  group_by(ClimateZone) %>% 
+  count(MineralGroupsNew) 
+
+library(RColorBrewer)
+amorph <- "#c994c7"
+illite <- c("#f6e8c3", "#dfc27d", "#bf812d", "#8c510a", "#6c3e06")
+smectite <- brewer.pal(3, "Greens")
+kaolinite <- c("#9ecae1", "#3182bd")
+
+MineralGroup_color <- c(amorph, illite, smectite, kaolinite)
+
+lyr_data %>% 
+  group_by(id) %>% 
+  distinct(id, .keep_all = TRUE) %>% 
+  mutate(pro_usda_soil_order = factor(pro_usda_soil_order,
+                                      levels = c("Andisols", "Alfisols", 
+                                                 "Aridisols",  "Entisols", 
+                                                 "Gelisols", "Inceptisols",
+                                                 "Mollisols", "Spodosols", 
+                                                 "Vertisols", "Oxisols", 
+                                                 "Ultisols", ""))) %>% 
+  ggplot(aes(x = MineralGroupsNew, fill = pro_usda_soil_order)) +
+  geom_bar(color = "black") +
+  theme_bw(base_size = 17) +
+  facet_wrap(~ClimateZone) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.minor = element_blank(),
+        legend.position = c(0.85,0.2)) +
+  scale_x_discrete("", labels = c("amorphous", "illite/\nmica",
+                                  "vermiculite/\nsmectite", "kaolinite")) +
+  scale_y_continuous("Number of profiles", expand = c(0,0), limits = c(0,100),
+                     breaks = seq(0,100,20)) +
+  scale_fill_manual("Soil types", values = MineralGroup_color) +
+  guides(fill = guide_legend(ncol = 2))
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_climate_Mineral_bar_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 7)
 
 lyr_data %>% 
   group_by(id) %>% 
@@ -322,6 +389,7 @@ lyr_data %>%
 
 ##GAP-FILL LAND COVER DATA
 
+##Cummulative distribution
 lyr_data %>% 
   ggplot(aes(x = depth)) +
   stat_ecdf(color = "red") +
@@ -356,180 +424,8 @@ lyr_data %>%
   geom_hline(yintercept = 0.785, linetype = "dashed")
 
 
-### Apply mspline function
-summary(lyr_data$depth)
-summary(lyr_data$lyr_14c)
-summary(lyr_data$CORG)
-
-## mspline 14C
-lyr_data_mpspline_14c <- lyr_data %>% 
-  dplyr::select(id, lyr_top, lyr_bot, lyr_14c) %>% 
-  mpspline_tidy(vlow = -1000, vhigh = 350, lam = 0.5)
-
-## mspline CORG
-lyr_data_mpspline_c <- lyr_data %>% 
-  dplyr::select(id, lyr_top, lyr_bot, CORG) %>% 
-  mpspline_tidy(vlow = 0.007, vhigh = 60, lam = 0.5)
-
-## 14C and SOC
-mspline_14c_c <- lyr_data_mpspline_14c$est_1cm %>% 
-  rename(lyr_14c_msp = SPLINED_VALUE) %>% 
-  full_join(lyr_data_mpspline_c$est_1cm %>% 
-              rename(CORG_msp = SPLINED_VALUE)) %>% 
-  filter(UD < 101) %>% 
-  tibble()
-
-mspline_14c_c_all <- mspline_14c_c %>%
-  dplyr::left_join(lyr_data %>% 
-                     distinct(id, .keep_all = TRUE), 
-                   by = "id") %>% 
-  group_by(id) %>% 
-  arrange(UD) %>% 
-  ungroup() 
-
-summary(mspline_14c_c$lyr_14c_msp)
-summary(mspline_14c_c$CORG_msp)
-summary(mspline_14c_c$UD)
-summary(mspline_14c_c$LD)
-
-mspline_14c_c_all %>% 
-  group_by(ClimateZoneAnd) %>% 
-  summarise(n_studies = n_distinct(entry_name),
-            n_sites = n_distinct(site_name),
-            n_profiles = n_distinct(id))
-
-mspline_14c_c_all %>% 
-  group_by(MineralType) %>% 
-  summarise(n_studies = n_distinct(entry_name),
-            n_sites = n_distinct(site_name),
-            n_profiles = n_distinct(id))
-
 ### Data exploration ###
-mspline_14c_c_all %>% 
-  group_by(UD, ClimateZoneAnd) %>% 
-  mutate(median_14c = median(lyr_14c_msp),
-         median_CORG = median(CORG_msp),
-         n = n()) %>% 
-  ungroup(UD) %>% 
-  mutate(n_rel = n * 100 / max(n)) %>% 
-  distinct(median_14c, .keep_all = TRUE) %>% 
-  filter(ClimateZoneAnd != "volcanic soils") %>% 
-  filter(n_rel > 33) %>% 
-  dplyr::select(ClimateZoneAnd, UD, median_CORG, median_14c, n_rel) %>% 
-  arrange(desc(median_14c)) %>% 
-  mutate(diff_c = rev(cumsum(rev(median_CORG*100/sum(median_CORG))))) %>% 
-  mutate(cum_c = cumsum(median_CORG*100/sum(median_CORG))) %>%
-  mutate_at("cum_c", ~replace(., which.min(.), 0)) %>% 
-  ggplot(aes(x = median_14c, y = cum_c, color = ClimateZoneAnd)) +
-  geom_path(size = 1) +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     limits = c(-1000,125),
-                     breaks = c(-1000,-750,-500,-250,0,125)) +
-  scale_y_continuous("Cummulative SOC content [%]", expand = c(0,0),
-                     trans = "reverse", limits = c(100,0)) +
-  scale_color_discrete("Climate zone")
-ggsave(file = paste0("./Figure/ISRaD_14C_cumC_climate_", Sys.Date(),
-                     ".jpeg"), width = 12, height = 6)
-
-
-mspline_14c_c_all %>% 
-  group_by(UD, MineralType) %>% 
-  mutate(median_14c = median(lyr_14c_msp),
-         median_CORG = median(CORG_msp),
-         n = n()) %>% 
-  ungroup(UD) %>% 
-  mutate(n_rel = n * 100 / max(n)) %>% 
-  distinct(median_14c, .keep_all = TRUE) %>% 
-  filter(n_rel > 33) %>% 
-  dplyr::select(MineralType, UD, median_CORG, median_14c, n_rel) %>% 
-  arrange(desc(median_14c)) %>% 
-  mutate(diff_c = rev(cumsum(rev(median_CORG*100/sum(median_CORG))))) %>% 
-  mutate(cum_c = cumsum(median_CORG*100/sum(median_CORG))) %>%
-  mutate_at("cum_c", ~replace(., which.min(.), 0)) %>%
-  ggplot(aes(x = median_14c, y = cum_c, color = MineralType)) +
-  geom_path(size = 1) +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     limits = c(-1000,125), 
-                     breaks = c(-1000,-750,-500,-250,0,125)) +
-  scale_y_continuous("Cummulative SOC content [%]", expand = c(0,0),
-                     trans = "reverse", limits = c(100,0)) +
-  scale_color_discrete("Mineral type")
-ggsave(file = paste0("./Figure/ISRaD_14C_cumC_mineral_", Sys.Date(),
-                     ".jpeg"), width = 12, height = 6)
-
-mspline_14c_c_all %>% 
-  pivot_longer(cols = c(lyr_14c_msp, lyr_14c), names_to = "data_14c",
-               values_to = "values_14c") %>% 
-  ggplot() +
-  stat_ecdf(aes(x = values_14c, color = data_14c), pad = FALSE) +
-  theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black")) +
-  scale_y_continuous("Cummulative probaility [%]", expand = c(0,0)) +
-  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     trans = "reverse")
-
-mspline_14c_c_all %>% 
-  pivot_longer(cols = c(CORG_msp, CORG), names_to = "data_CORG",
-               values_to = "values_CORG") %>% 
-  ggplot() +
-  stat_ecdf(aes(x = values_CORG, color = data_CORG), pad = FALSE) +
-  theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black")) +
-  scale_y_continuous("Cummulative propability [%]", expand = c(0,0)) +
-  scale_x_continuous("Soil organic carbon [wt-%]", expand = c(0,0))
-
-mspline_14c_c_all %>% 
-  ggplot(aes(y = UD, x = lyr_14c_msp, group = id, color = ClimateZoneAnd)) + 
-  geom_path() +
-  facet_wrap(~ClimateZoneAnd) +
-  theme_classic(base_size = 16) +
-  theme(axis.text = element_text(color = "black"),
-        panel.grid.major = element_line(),
-        legend.position = "none",
-        panel.spacing = unit(1, "cm")) +
-  scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0), 
-                     limits = c(100,0)) +
-  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     limits = c(-1000,300)) 
-# ggsave(file = paste0("./Figure/ISRaD_14C_depth_climate_", Sys.Date(),
-#                      ".jpeg"), width = 12, height = 6)
-
-mspline_14c_c_all %>% 
-  ggplot(aes(y = UD, x = CORG_msp, group = id, color = ClimateZoneAnd)) + 
-  geom_path() +
-  facet_wrap(~ClimateZoneAnd) +
-  theme_classic(base_size = 16) +
-  theme(axis.text = element_text(color = "black"),
-        panel.grid.major = element_line(),
-        legend.position = "none",
-        panel.spacing = unit(1, "cm")) +
-  scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0), 
-                     limits = c(100,0)) +
-  scale_x_continuous("SOC [wt-%]", expand = c(0,0), trans = "log10")
-
-
-mspline_14c_c_all %>% 
-  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
-  # geom_path(aes(group = id)) +
-  geom_hex(binwidth = c(0.1,50)) +
-  facet_wrap(~ClimateZoneAnd) +
-  theme_bw(base_size = 16) +
-  theme(axis.text = element_text(color = "black")) +
-  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.005,60)) +
-  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
-                     limits = c(-1005,400)) +
-  scale_fill_viridis_c(direction = -1, limits = c(0,260)) +
-  coord_cartesian(ylim = c(-1000,400)) 
-# ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_", Sys.Date(),
-#                      ".jpeg"), width = 12, height = 6)
-
-
+### Climate
 ## Splined and averaged data
 climate_all_and <- lyr_data %>%
   group_by(ClimateZoneAnd, UD) %>% 
@@ -545,11 +441,9 @@ climate_all_and <- lyr_data %>%
   ungroup(UD) %>%
   mutate(n_rel = n * 100 / max(n))
 
-
 climate_all_and$ClimateZoneAnd <- factor(climate_all_and$ClimateZoneAnd,
-                                  levels = c("volcanic soils", "tundra/polar", "cold temperate", 
-                                             "warm temperate", "arid", "tropical"))
-
+                                         levels = c("volcanic soils", "tundra/polar", "cold temperate", 
+                                                    "warm temperate", "tropical", "arid"))
 depth_sum <- climate_all_and %>% 
   filter(ClimateZoneAnd != "volcanic soils") %>% 
   filter(n > 4 & n_rel > 33) %>% 
@@ -623,6 +517,228 @@ c1_1 <- climate_all_and %>%
 ggarrange(c1, c1_1, common.legend = TRUE)
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_depth_Climate_", Sys.Date(),
                      ".jpeg"), width = 12, height = 6)
+
+climate_all_and_cum <- climate_all_and %>% 
+  # filter(ClimateZoneAnd != "volcanic soils") %>% 
+  dplyr::select(ClimateZoneAnd, UD, median_c, median_14c, n_rel, n) %>% 
+  arrange(UD) %>% 
+  #calculate based on sum for each climate zone  
+  filter(n > 4 & n_rel > 33) %>%
+  # mutate(cum_c = cumsum(median_c*100/sum(median_c))) %>% 
+  #calculate based on sum for all profiles (globally)
+  mutate(cum_c = cumsum(median_c*100/1497)) %>% 
+  mutate_at("cum_c", ~replace(., which(UD == 1), 0))
+
+depth_sum_cum <- climate_all_and_cum %>% 
+  dplyr::filter(UD == 1|
+                  UD == 10|
+                  UD == 20|
+                  UD == 30|
+                  UD == 40|
+                  UD == 50|
+                  UD == 60|
+                  UD == 70|
+                  UD == 80|
+                  UD == 89|
+                  UD == 99)
+
+climate_all_and_cum %>% 
+  arrange(UD) %>% 
+  ggplot(aes(x = median_14c, y = cum_c, color = ClimateZoneAnd)) +
+  geom_path(linewidth = 1.5) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_point(data = depth_sum_cum, 
+             aes(y = cum_c, x = median_14c), size = 3,
+             shape = 21, fill = "black", color = "white") +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1000,125),
+                     breaks = c(-1000,-750,-500,-250,0,125)) +
+  scale_y_continuous("Cumulative SOC content [%]", expand = c(0,0),
+                     trans = "reverse", limits = c(60,0)) +
+  scale_color_manual("Grouping", values = color_climate_w_amorph)
+ggsave(file = paste0("./Figure/ISRaD_14C_cumC_climateAnd_global_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+# climate_all_and_cum %>% 
+#   summarise(sum_c = sum(median_c)) %>% 
+#   mutate(rel_c = sum_c*100/sum(sum_c))
+# 
+# climate_all_and_cum %>% 
+#   # arrange(ClimateZoneAnd) %>% 
+#   ungroup() %>% 
+#   group_by(UD) %>% 
+#   mutate(n_rel_all = n/sum(n)) %>% 
+#   ungroup() %>% 
+#   group_by(ClimateZoneAnd) %>%
+#   mutate(median_c_n = median_c*n_rel_all) %>% 
+#   mutate(cum_c = cumsum(median_c*n_rel_all)/200*100) %>% view()
+#   arrange(UD) %>% 
+#   ggplot(aes(x = median_14c, y = cum_c, color = ClimateZoneAnd)) +
+#   geom_path(linewidth = 1.5) +
+#   geom_vline(xintercept = 0, linetype = "dashed") +
+#   theme_bw(base_size = 16) +
+#   theme(axis.text = element_text(color = "black")) +
+#   scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+#                      limits = c(-1000,125),
+#                      breaks = c(-1000,-750,-500,-250,0,125)) +
+#   scale_y_continuous("Cumulative SOC content [%]", expand = c(0,0),
+#                      trans = "reverse", limits = c(50,0)) +
+#   scale_color_manual("Grouping", values = color_climate_w_amorph)
+
+## Mineral Grouping (4 groups)
+mineral_new <- lyr_data %>%
+  group_by(MineralGroupsNew, UD) %>% 
+  mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         median_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
+         lci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[1],
+         uci_c = wilcox.test(CORG_msp, conf.level = 0.95, conf.int = TRUE)$conf.int[2],
+         n = n(),
+         n_site = n_distinct(site_name)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>%
+  ungroup(UD) %>%
+  mutate(n_rel = n * 100 / max(n))
+
+depth_sum <- mineral_new %>% 
+  filter(n > 4 & n_rel > 33) %>% 
+  dplyr::select(MineralGroupsNew, UD, median_c, median_14c) %>% 
+  dplyr::filter(UD == 1|
+                  UD == 10|
+                  UD == 20|
+                  UD == 30|
+                  UD == 40|
+                  UD == 50|
+                  UD == 60|
+                  UD == 70|
+                  UD == 80|
+                  UD == 90|
+                  UD == 99)
+
+mn1 <- mineral_new %>% 
+  filter(n > 4 & n_rel > 33) %>% 
+  ggplot() + 
+  geom_path(aes(x = median_c, y = median_14c, color = MineralGroupsNew), 
+            linewidth = 2) +
+  geom_errorbar(aes(ymin = lci_14c, ymax = uci_14c, x = median_c, 
+                    color = MineralGroupsNew), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = lci_c, xmax = uci_c, y = median_14c, 
+                     color = MineralGroupsNew), alpha = 0.3) +
+  geom_point(data = depth_sum, aes(x = median_c, y = median_14c), size = 2,
+             shape = 21, fill = "black", color = "white") +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        legend.position = c(0.21,0.2),
+        axis.title = element_text(face = "bold"),
+        legend.background = element_blank()) +
+  scale_x_continuous("Soil organic carbon [wt-%]", trans = "log10", 
+                     limits = c(0.1,30), expand = c(0,0)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1000,125), breaks = seq(-1000,0,250)) +
+  scale_color_manual("Mineral grouping", values = c("#c083be", "#bf812d",
+                                                    "#37b75e", "#3b8fcc"))
+
+plot(mn1)
+ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_MineralGroupsNew_", Sys.Date(),
+                     ".jpeg"), width = 8, height = 5)
+
+## Mineral Grouping (3 groups)
+lyr_data %>% 
+  group_by(UD, MineralType) %>% 
+  mutate(median_14c = median(lyr_14c_msp),
+         median_CORG = median(CORG_msp),
+         n = n()) %>% 
+  ungroup(UD) %>% 
+  mutate(n_rel = n * 100 / max(n)) %>% 
+  distinct(median_14c, .keep_all = TRUE) %>% 
+  filter(n_rel > 33) %>% 
+  dplyr::select(MineralType, UD, median_CORG, median_14c, n_rel) %>% 
+  arrange(desc(median_14c)) %>% 
+  mutate(diff_c = rev(cumsum(rev(median_CORG*100/sum(median_CORG))))) %>% 
+  mutate(cum_c = cumsum(median_CORG*100/sum(median_CORG))) %>%
+  mutate_at("cum_c", ~replace(., which.min(.), 0)) %>%
+  ggplot(aes(x = median_14c, y = cum_c, color = MineralType)) +
+  geom_path(size = 1) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1000,125), 
+                     breaks = c(-1000,-750,-500,-250,0,125)) +
+  scale_y_continuous("Cummulative SOC content [%]", expand = c(0,0),
+                     trans = "reverse", limits = c(100,0)) +
+  scale_color_discrete("Mineral type")
+ggsave(file = paste0("./Figure/ISRaD_14C_cumC_mineral_", Sys.Date(),
+                     ".jpeg"), width = 12, height = 6)
+
+lyr_data %>% 
+  pivot_longer(cols = c(lyr_14c_msp, lyr_14c), names_to = "data_14c",
+               values_to = "values_14c") %>% 
+  ggplot() +
+  stat_ecdf(aes(x = values_14c, color = data_14c), pad = FALSE) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_y_continuous("Cummulative probaility [%]", expand = c(0,0)) +
+  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     trans = "reverse")
+
+lyr_data %>% 
+  pivot_longer(cols = c(CORG_msp, CORG), names_to = "data_CORG",
+               values_to = "values_CORG") %>% 
+  ggplot() +
+  stat_ecdf(aes(x = values_CORG, color = data_CORG), pad = FALSE) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_y_continuous("Cummulative propability [%]", expand = c(0,0)) +
+  scale_x_continuous("Soil organic carbon [wt-%]", expand = c(0,0))
+
+lyr_data %>% 
+  ggplot(aes(y = UD, x = lyr_14c_msp, group = id, color = ClimateZoneAnd)) + 
+  geom_path() +
+  facet_wrap(~ClimateZoneAnd) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(),
+        legend.position = "none",
+        panel.spacing = unit(1, "cm")) +
+  scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0), 
+                     limits = c(100,0)) +
+  scale_x_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1000,300)) 
+# ggsave(file = paste0("./Figure/ISRaD_14C_depth_climate_", Sys.Date(),
+#                      ".jpeg"), width = 12, height = 6)
+
+lyr_data %>% 
+  ggplot(aes(y = UD, x = CORG_msp, group = id, color = ClimateZoneAnd)) + 
+  geom_path() +
+  facet_wrap(~ClimateZoneAnd) +
+  theme_classic(base_size = 16) +
+  theme(axis.text = element_text(color = "black"),
+        panel.grid.major = element_line(),
+        legend.position = "none",
+        panel.spacing = unit(1, "cm")) +
+  scale_y_continuous("Depth [cm]", trans = "reverse", expand = c(0,0), 
+                     limits = c(100,0)) +
+  scale_x_continuous("SOC [wt-%]", expand = c(0,0), trans = "log10")
+
+
+lyr_data %>% 
+  ggplot(aes(x = CORG_msp, y = lyr_14c_msp)) + 
+  # geom_path(aes(group = id)) +
+  geom_hex(binwidth = c(0.1,50)) +
+  facet_wrap(~ClimateZoneAnd) +
+  theme_bw(base_size = 16) +
+  theme(axis.text = element_text(color = "black")) +
+  scale_x_continuous("SOC [wt-%]", trans = "log10", limits = c(0.005,60)) +
+  scale_y_continuous(expression(paste(Delta^14, "C [‰]")), expand = c(0,0),
+                     limits = c(-1005,400)) +
+  scale_fill_viridis_c(direction = -1, limits = c(0,260)) +
+  coord_cartesian(ylim = c(-1000,400)) 
+# ggsave(file = paste0("./Figure/ISRaD_14C_SOC_climate_hex_", Sys.Date(),
+#                      ".jpeg"), width = 12, height = 6)
+
 
 mineral_type <- lyr_data %>%
   group_by(MineralType, UD) %>% 
@@ -723,14 +839,14 @@ lyr_data %>%
 # set.seed(123)
 # set.seed(456)
 set.seed(789)
-rdm_id <- mspline_14c_c_all %>% 
+rdm_id <- lyr_data %>% 
   distinct(id, .keep_all = TRUE) %>% 
   group_by(ClimateZoneAnd) %>% 
   filter(ClimateZoneAnd != "volcanic soils") %>% 
   sample_n(28) %>% 
   ungroup()
 
-climate_rdm <- mspline_14c_c_all %>% 
+climate_rdm <- lyr_data %>% 
   filter(id %in% rdm_id$id) %>% 
   group_by(ClimateZoneAnd, UD) %>% 
   mutate(median_14c = wilcox.test(lyr_14c_msp, conf.level = 0.95, conf.int = TRUE)$estimate,
