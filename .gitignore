@@ -11,7 +11,7 @@ ISRaD.Rproj
 _site/
 .sass-cache/
 
-.jpeg
-.svg
-.png
-.tif
+*.jpeg
+*.svg
+*.png
+*.tif
