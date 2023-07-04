@@ -31,6 +31,8 @@ world_map <- World %>%
   dplyr::filter(continent != "Seven seas (open ocean)",
                 continent != "Antarctica")
 
+plot(world_map$geometry)
+
 ### Data distribution
 ## Load and crop data
 
@@ -88,19 +90,46 @@ ClimateZone_area <- z %>%
   summarise(area_km2_sum = sum(area)) %>% 
   mutate(area_prop = area_km2_sum / sum(area_km2_sum))
 
-# SOC (SoilGrids)
-# unit: 1g/kg = 0.1 %
-soc_5_dir <- "./Data/SoilGrids/soil_world/soc_0-5cm_mean_30s.tif" 
-soc_5_raster <- raster::raster(soc_5_dir)  
+x_grp <- x
+x_grp_crop <- raster::crop(x_grp, world_map)
+x_grp_global <- raster::mask(x_grp_crop, world_map)
 
-soc_15_dir <- "./Data/SoilGrids/soil_world/soc_5-15cm_mean_30s.tif" 
-soc_15_raster <- raster::raster(soc_15_dir) 
+x_grp_global[x_grp_global == 0] <- NA
+#tropical
+x_grp_global[x_grp_global <= 3] <- 1
+#arid
+x_grp_global[x_grp_global > 3 & x_grp_global <= 7] <- 2
+#warm temperate
+x_grp_global[x_grp_global > 7 & x_grp_global <= 16] <- 3
+#cold temperate
+x_grp_global[x_grp_global > 16 & x_grp_global <= 28] <- 4
+#polar/tundra 
+x_grp_global[x_grp_global > 28 & x_grp_global <= 30] <- 5
 
-soc_30_dir <- "./Data/SoilGrids/soil_world/soc_15-30cm_mean_30s.tif" 
-soc_30_raster <- raster::raster(soc_30_dir) 
+tm_shape(x_grp_global) +
+  tm_raster(title = "Climate groups", style = "cat", 
+            palette = "Paired", labels = c("tropical", "arid", "warm temperate",
+                                             "cold temperate", "polar/tundra")) +
+  tm_layout()
 
-soc_60_dir <- "./Data/SoilGrids/soil_world/soc_30-60cm_mean_30s.tif" 
-soc_60_raster <- raster::raster(soc_60_dir) 
+# # SOC (SoilGrids) v2
+# # unit: 1g/kg = 0.1 %
+# soc_5_dir <- "./Data/SoilGrids/soil_world/soc_0-5cm_mean_30s.tif" 
+# soc_5_raster <- raster::raster(soc_5_dir)  
+# 
+# soc_15_dir <- "./Data/SoilGrids/soil_world/soc_5-15cm_mean_30s.tif" 
+# soc_15_raster <- raster::raster(soc_15_dir) 
+# 
+# soc_30_dir <- "./Data/SoilGrids/soil_world/soc_15-30cm_mean_30s.tif" 
+# soc_30_raster <- raster::raster(soc_30_dir) 
+# 
+# soc_60_dir <- "./Data/SoilGrids/soil_world/soc_30-60cm_mean_30s.tif" 
+# soc_60_raster <- raster::raster(soc_60_dir) 
+
+# SoilGrids v1
+# SOC stocks (0-1m); unit: t/ha
+socs_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/SoilGrids_v1/OCSTHA_M_100cm_250m_ll.tif"
+socs_raster <- raster::raster(socs_dir)
 
 ## Randomly selected 10,00 sampling points globally
 set.seed(42)
@@ -137,29 +166,33 @@ CZ_rdm_clean <- CZ_rdm %>%
   )) %>% 
   dplyr::select(ClimateZone)
 
-## SoilGrids data
-# unit:  1g/kg = 0.1 %
-# SOC: 0-5 cm
-soc_5_rdm <- raster::extract(soc_5_raster, rdm_p, df = TRUE) 
+# ## SoilGrids data v2
+# # unit:  1g/kg = 0.1 %
+# # SOC: 0-5 cm
+# soc_5_rdm <- raster::extract(soc_5_raster, rdm_p, df = TRUE) 
+# 
+# # SOC: 5-15 cm
+# soc_15_rdm <- raster::extract(soc_15_raster, rdm_p, df = TRUE) 
+# 
+# # SOC: 15-30 cm
+# soc_30_rdm <- raster::extract(soc_30_raster, rdm_p, df = TRUE) 
+# 
+# # SOC: 30-60 cm
+# soc_60_rdm <- raster::extract(soc_60_raster, rdm_p, df = TRUE)
 
-# SOC: 5-15 cm
-soc_15_rdm <- raster::extract(soc_15_raster, rdm_p, df = TRUE) 
-
-# SOC: 15-30 cm
-soc_30_rdm <- raster::extract(soc_30_raster, rdm_p, df = TRUE) 
-
-# SOC: 30-60 cm
-soc_60_rdm <- raster::extract(soc_60_raster, rdm_p, df = TRUE)
+## SoilGrids data v1
+# SOC stocks (0-1m); unit: t/ha
+socs_rdm <- raster::extract(socs_raster, rdm_p, df = TRUE)
 
 ##Merge data
 rdm_data <- as.data.frame(rdm_p) %>% 
   rename(MAT = wc2.0_bio_30s_01,
          Longitude = x,
          Latitude = y) %>% 
-  cbind(MAP_rdm[-1], PET_rdm[-1], CZ_rdm_clean, soc_5_rdm[-1],
-        soc_15_rdm[-1], soc_30_rdm[-1], soc_60_rdm[-1]) %>% 
+  cbind(MAP_rdm[-1], PET_rdm[-1], CZ_rdm_clean, socs_rdm[-1]) %>% 
   mutate(dataset = "global") %>% 
-  tibble()
+  tibble() %>% 
+  rename(SOC_t_ha_0_1m = OCSTHA_M_100cm_250m_ll)
 
 head(rdm_data)
 
@@ -178,7 +211,7 @@ lyr_mod <- lyr_data %>%
   mutate(dataset = "ISRaD")
 
 climate_all <- rdm_data %>% 
-  dplyr::select(c(1:6,11)) %>% 
+  dplyr::select(c(1:6,8)) %>% 
   rbind(lyr_mod) %>% 
   rename("MAT [°C]" = MAT,
          "MAP [mm]" = MAP,
@@ -212,35 +245,63 @@ ggsave(file = paste0("./Figure/ISRaD_msp_Global_climate_dis_box_", Sys.Date(),
 ## Calculate mean for SOC for each climate zone
 rdm_data %>% 
   group_by(ClimateZone) %>% 
-  skimr::skim_without_charts(soc_0.5cm, soc_5.15cm, soc_15.30cm, soc_30.60cm)
+  skimr::skim_without_charts(SOC_t_ha_0_1m)
 
 rdm_data$ClimateZone <- factor(rdm_data$ClimateZone,
                                levels = c("tundra/polar", "cold temperate",
                                           "warm temperate", "tropical", "arid"))
-rdm_data %>% 
+# rdm_data %>% 
+#   left_join(ClimateZone_area) %>% 
+#   pivot_longer(cols = c(soc_0.5cm, soc_5.15cm, soc_15.30cm, soc_30.60cm),
+#                names_to = "names", values_to = "values") %>% 
+#   mutate(ClimateZone = factor(ClimateZone, 
+#                               levels = c("tundra/polar", "cold temperate",
+#                                          "warm temperate", "tropical", "arid"))) %>% 
+#   mutate(names = factor(names, 
+#                         levels = c("soc_0.5cm", "soc_5.15cm",
+#                                    "soc_15.30cm", "soc_30.60cm"))) %>% 
+#   ggplot(aes(fill = names, x = ClimateZone, y = values*area_prop)) +
+#   geom_boxplot(notch = TRUE) +
+#   theme_bw(base_size = 16) +
+#   theme(axis.text = element_text(color = "black"),
+#         panel.grid = element_blank(),
+#         axis.title.x = element_blank(),
+#         legend.position = "top",
+#         strip.background = element_rect(fill = "white"),
+#         axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   scale_y_continuous("Soil organic carbon content [g/kg] / area [km²]", expand = c(0,0),
+#                      limits = c(0,100)) +
+#   facet_wrap(~names, scales = "free", nrow = 1) +
+#   scale_x_discrete(labels = c("tundra/\npolar", "cold\ntemperate",
+#                               "warm\ntemperate", "tropical", "arid"))
+# ggsave(file = paste0("./Figure/SoilGrids_SOC_area_ClimateZone_box_", Sys.Date(),
+#                      ".jpeg"), width = 14, height = 6)
+
+rdm_data %>%
   left_join(ClimateZone_area) %>% 
-  pivot_longer(cols = c(soc_0.5cm, soc_5.15cm, soc_15.30cm, soc_30.60cm),
-               names_to = "names", values_to = "values") %>% 
-  mutate(ClimateZone = factor(ClimateZone, 
+  group_by(ClimateZone) %>% 
+  summarise(mean_SOC_t_ha = mean(SOC_t_ha_0_1m, na.rm = TRUE),
+            area_km2_sum = mean(area_km2_sum),
+            area_prop = mean(area_prop)) %>% 
+  mutate(amount_C_Pg = mean_SOC_t_ha * area_km2_sum * 10^-7,
+         prop_c = mean_SOC_t_ha * area_prop)
+  
+
+rdm_data %>%
+  left_join(ClimateZone_area) %>%
+  mutate(ClimateZone = factor(ClimateZone,
                               levels = c("tundra/polar", "cold temperate",
-                                         "warm temperate", "tropical", "arid"))) %>% 
-  mutate(names = factor(names, 
-                        levels = c("soc_0.5cm", "soc_5.15cm",
-                                   "soc_15.30cm", "soc_30.60cm"))) %>% 
-  ggplot(aes(fill = names, x = ClimateZone, y = values*area_prop)) +
+                                         "warm temperate", "tropical", "arid"))) %>%
+  ggplot(aes(fill = ClimateZone, y = SOC_t_ha_0_1m, x = ClimateZone)) +
   geom_boxplot(notch = TRUE) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
         panel.grid = element_blank(),
         axis.title.x = element_blank(),
-        legend.position = "top",
-        strip.background = element_rect(fill = "white"),
-        axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_y_continuous("Soil organic carbon content [g/kg] / area [km²]", expand = c(0,0),
-                     limits = c(0,100)) +
-  facet_wrap(~names, scales = "free", nrow = 1) +
-  scale_x_discrete(labels = c("tundra/\npolar", "cold\ntemperate",
-                              "warm\ntemperate", "tropical", "arid"))
-ggsave(file = paste0("./Figure/SoilGrids_SOC_area_ClimateZone_box_", Sys.Date(),
-                     ".jpeg"), width = 14, height = 6)
+        legend.position = "none",
+        strip.background = element_rect(fill = "white")) +
+  scale_y_continuous("SOC stocks [t/ha]", expand = c(0,0), limits = c(0,3200),
+                     breaks = seq(0,3000,500)) 
+ggsave(file = paste0("./Figure/SoilGrids1_SOCs_ClimateZone_box_", Sys.Date(),
+                     ".jpeg"), width = 8, height = 8)
 

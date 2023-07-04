@@ -10,3 +10,15 @@ ISRaD.Rproj
 # Folders
 _site/
 .sass-cache/
+ISRaD_Slope/Data/SoilGrids/soc_climate.tif
+ISRaD_Slope/Data/RF_tuned_output_2023-02-03.RData
+*.RData
+*.tif
+*.jpeg
+*.png
+*.svg
+ISRaD_Slope/Data/ISRaD_RF_all_default_ale_14c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_default_ale_c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_test_ale_14c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_test_ale_c_2023-02-08
+ISRaD_Slope/Data/ISRaD_RF_all_test_ice_14c_2023-02-17
