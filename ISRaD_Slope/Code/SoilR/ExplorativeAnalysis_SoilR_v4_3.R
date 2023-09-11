@@ -36,6 +36,26 @@ AtmF14 <- bind.C14curves(prebomb = IntCal13, postbomb = Hua2021$NHZone2,
                          time.scale = "AD")[,1:2]
 # AtmF14 <- Hua2021$NHZone2[,1:2]
 
+AtmF14 %>% 
+  filter(Year.AD >= 1940) %>% 
+  ggplot(aes(x = Year.AD, y = Delta14C)) +
+  geom_line(linewidth = 1, color = "red") +
+  theme_bw(base_size = 18) + 
+  theme(axis.text = element_text(color = "black", face = "bold"),
+        axis.title = element_text(face = "bold"),
+        panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        plot.margin = margin(t = 10, b = 5, l = 5, r = 20),
+        panel.background = element_rect(fill = "transparent",colour = NA),
+        plot.background = element_rect(fill = "transparent",colour = NA)) +
+  scale_x_continuous("Year", limits = c(1940, 2020), expand = c(0,0)) +
+  scale_y_continuous(expression(paste(Delta^14,"C [‰]")), limits = c(-100,1000),
+                     expand = c(0,0), breaks = seq(0,1000,250))
+ggsave(file = paste0("./Figure/bombCurve_", Sys.Date(), ".png"), bg = "transparent",
+       width = 8, height = 6)
+
 k1_list <- list(k1.5 = 1/250,
                 k1.6 = 1/500,
                 k1.7 = 1/1000,
@@ -234,7 +254,7 @@ OnePool_vkm <- OPM_results_vrm %>%
   scale_shape_manual("depth layer", values = c(25, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21)) +
   scale_linewidth_manual("", values = c(3,2,2,2)) +
   scale_color_manual("vertical k modifier", 
-                     values = c("#7b3294", "#0570b0", "#74a9cf", "#bdc9e1")) +
+                     values = c("#7b3294", "#01665e", "#5ab4ac", "#c7eae5")) +
   annotation_logticks(sides = "b", scaled = TRUE, short = unit(1.5,"mm"),
                       mid = unit(3,"mm"), long = unit(4,"mm")) +
   guides(shape = "none", linewidth = "none", 
@@ -454,8 +474,8 @@ OnePool_Roots <- OPM_results_RI %>%
   scale_shape_manual("depth layer", values = c(25, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21)) +
   scale_linewidth_manual("", values = c(3,2,2,2,2)) +
   scale_color_manual("belowground C inputs", 
-                     values = c("#7b3294", "#006837", "#31a354", 
-                                "#78c679", "#c2e699")) +
+                     values = c("#7b3294", "#01665e", "#35978f", 
+                                "#80cdc1", "#c7eae5")) +
   annotation_logticks(sides = "b", scaled = TRUE, short = unit(1.5,"mm"),
                       mid = unit(3,"mm"), long = unit(4,"mm")) +
   guides(shape = "none", linewidth = "none", 
@@ -551,9 +571,9 @@ OnePool_d <- OPM_results_d %>%
                      labels = c(1,10,100,1000)) +
   scale_y_continuous("", limits = c(-350,125), expand = c(0,0)) +
   scale_shape_manual("depth layer", values = c(25, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21)) +
-  scale_linewidth_manual("", values = c(2,2,3,2)) +
+  scale_linewidth_manual("", values = c(2,3,2,2)) +
   scale_color_manual("vertical transport",
-                     values = c("#80cdc1", "#018571", "#7b3294", "#a6611a")) +
+                     values = c("#80cdc1","#7b3294", "#a6611a",  "#dfc27d")) +
   annotation_logticks(sides = "b", scaled = TRUE, short = unit(1.5,"mm"),
                       mid = unit(3,"mm"), long = unit(4,"mm")) +
   guides(shape = "none", linewidth = "none", 
@@ -684,8 +704,11 @@ ggarrange(p_empty,  OnePool_const_k,  OnePool_vkm, OnePool_Litter, OnePool_Roots
 ggsave(file = paste0("./Figure/AllModels_2019_", Sys.Date(), ".png"),
        width = 12, height = 15)
 
-
-
+annotate_figure(
+  ggarrange(OnePool_const_k,  OnePool_vkm, OnePool_Litter, OnePool_Roots, 
+            OnePool_d, TwoPool_a, nrow = 2, ncol = 3),
+  bottom = text_grob("Soil organic carbon stocks; log-scale", size = 14),
+  left = text_grob(expression(paste(Delta^14,"C [‰]")), rot = 90, size = 14))
 
 
 

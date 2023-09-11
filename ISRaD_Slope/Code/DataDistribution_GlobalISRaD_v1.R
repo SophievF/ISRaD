@@ -200,6 +200,8 @@ write.csv(rdm_data, file = paste0("./Data/Global_rdm_data_distribution_",
                                      Sys.Date(), ".csv"),
           row.names = FALSE)
 
+rdm_data <- read_csv("./Data/Global_rdm_data_distribution_2023-06-27.csv")
+
 lyr_mod <- lyr_data %>% 
   dplyr::select(ClimateZone, pro_MAT_mod, pro_MAP_mod, pro_PET_mm_yr_mod,
                 pro_long, pro_lat) %>% 
@@ -283,7 +285,7 @@ rdm_data %>%
   summarise(mean_SOC_t_ha = mean(SOC_t_ha_0_1m, na.rm = TRUE),
             area_km2_sum = mean(area_km2_sum),
             area_prop = mean(area_prop)) %>% 
-  mutate(amount_C_Pg = mean_SOC_t_ha * area_km2_sum * 10^-7,
+  mutate(amount_C_Pg = (mean_SOC_t_ha*100) * area_km2_sum*10^-9,
          prop_c = mean_SOC_t_ha * area_prop)
   
 

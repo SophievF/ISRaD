@@ -99,6 +99,14 @@ lyr_data %>%
   group_by(MineralGroupsNew) %>% 
   skimr::skim_without_charts(pro_MAT_mod, pro_AI, lyr_clay_mod)
 
+lyr_data %>% 
+  group_by(pro_land_cover) %>% 
+  dplyr::summarise(n_studies = n_distinct(entry_name),
+                   n_sites = n_distinct(site_name),
+                   n_profiles = n_distinct(id),
+                   n_countries = n_distinct(pro_country)) %>% 
+  mutate(rel_dis = n_profiles*100/sum(n_profiles))
+
 ## Define color code 
 # cold, warm, tropical, arid
 color_climate_wo_polar <- c("#bdd7e7", "#7fbf7b", "#1b7837", "#dfc27d")
@@ -244,7 +252,7 @@ ggarrange(map_loc, g_bar_dis, widths = c(1.5,1))
 ggsave(file = paste0("./Figure/ISRaD_msp_14C_SOC_map_climate_Mineral_bar_", 
                      Sys.Date(),".svg"), width = 15, height = 9)
 
-## Violin plot
+## Boxplots
 lyr_data %>% 
   group_by(ClimateZoneAnd) %>% 
   skimr::skim_without_charts(pro_MAT_mod, pro_AI, lyr_clay_mod)
