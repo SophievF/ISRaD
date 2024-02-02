@@ -233,6 +233,7 @@ summary(lyr_data_fill$pro_MAP_mod)
 summary(lyr_data_fill$pro_MAT_mod)
 
 ## Add Global GPP
+# Downloaded from Fluxcom and locally saved
 library(ncdf4)
 library(raster)
 library(sf)
@@ -273,7 +274,7 @@ PET_dir <- "D:/Sophie/PhD/AfSIS_GlobalData/Global-AI_ET0_v3_annual/et0_v3_yr.tif
 PET_global <- raster(PET_dir) 
 
 pro_PET <- raster::extract(PET_global, ISRaD_sf, df = TRUE) %>% 
-  rename(pro_PET_mm_yr = et0_v3_yr) %>% 
+  rename(pro_PET_mm_yr = pet_pm_sr_yr) %>% 
   dplyr::select(-ID)
 
 summary(pro_PET)

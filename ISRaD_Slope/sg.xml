@@ -1,4 +1,0 @@
-<WCS_GDAL>
-  <ServiceURL>https://maps.isric.org/mapserv?map=/map/clay.map&amp;SERVICE=WCS&amp;VERSION=2.0.1</ServiceURL>
-  <CoverageName>clay_0-5cm_mean</CoverageName>
-</WCS_GDAL>
