@@ -690,33 +690,35 @@ clay_p$ClimateZoneAnd <- factor(clay_p$ClimateZoneAnd,
 
 clay_14c_p <- clay_p %>%
   ggplot(aes(color = ClimateZoneAnd)) +
+  geom_smooth(aes(x = lyr_clay_mod_p, y = pred_median_14c_p), alpha = 0.2) +
   geom_path(aes(x = lyr_clay_mod, y = pred_median_14c), 
             linewidth = 1, alpha = 0.3, linetype = "dashed") +
-  geom_path(aes(x = lyr_clay_mod_p, y = pred_median_14c_p), 
-            linewidth = 1) +
+  # geom_path(aes(x = lyr_clay_mod_p, y = pred_median_14c_p), 
+  #           linewidth = 1) +
   geom_point(aes(x = lyr_clay_mod_p, y = pred_median_14c_p, size = lyr_clay_mod_p)) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
         plot.margin = margin(r = 5, l = 15, t = 10)) +
   scale_y_continuous(expression(paste("Median predicted ", Delta^14,"C [‰]")), 
                      limits = c(-300,0), expand = c(0,0)) +
-  scale_x_continuous("", expand = c(0.01,0.01)) +
+  scale_x_continuous("", expand = c(0,0)) +
   scale_color_manual("Climate grouping", values = color_climate_wo_polar) +
-  guides(color = guide_legend(override.aes = list(size = 2)))
+  guides(color = guide_legend(override.aes = list(size = 2))) 
 
 clay_c_p <- clay_p %>% 
   ggplot(aes(color = ClimateZoneAnd)) +
+  geom_smooth(aes(x = lyr_clay_mod_p, y = pred_median_c_p), alpha = 0.2) +
   geom_path(aes(x = lyr_clay_mod, y = pred_median_c), 
             linewidth = 1, alpha = 0.3, linetype = "dashed") +
-  geom_path(aes(x = lyr_clay_mod_p, y = pred_median_c_p), 
-            linewidth = 1) +
+  # geom_path(aes(x = lyr_clay_mod_p, y = pred_median_c_p), 
+  #           linewidth = 1) +
   geom_point(aes(x = lyr_clay_mod_p, y = pred_median_c_p, size = lyr_clay_mod_p)) +
   theme_bw(base_size = 16) +
   theme(axis.text = element_text(color = "black"),
         plot.margin = margin(r = 5, l = 25, b = 10)) +
   scale_y_continuous("Median predicted SOC [wt-%]", 
                      limits = c(0,2), expand = c(0,0)) +
-  scale_x_continuous("Clay content [%]", expand = c(0.01,0.01)) +
+  scale_x_continuous("Clay content [%]", expand = c(0,0)) +
   scale_color_manual("Climate grouping", values = color_climate_wo_polar) +
   guides(color = guide_legend(override.aes = list(size = 2)))
 
@@ -757,6 +759,10 @@ clay_14c_c_p <- clay_p %>%
   scale_color_manual("Climate grouping", values = color_climate_wo_polar) + 
   scale_size_continuous("Clay content [%]") +
   guides(color = guide_legend(override.aes = list(size = 4)))
+
+clay_p %>% 
+  group_by(ClimateZoneAnd) %>% 
+  slice(which.min(lyr_clay_mod_p), which.max(lyr_clay_mod_p))
 
 ## Figure 5   
 ggarrange(ggarrange(clay_14c_p, clay_c_p, nrow = 2, legend = "none"),

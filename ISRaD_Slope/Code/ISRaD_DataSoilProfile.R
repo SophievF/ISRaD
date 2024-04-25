@@ -65,6 +65,7 @@ color_climate_w_amorph <- c("#c083be", "#3182bd", "#bdd7e7", "#7fbf7b",
 color_mineral <- c("#c083be", "#bf812d", "#bdbdbd", "#fc9272")
 
 ### Plot profile data ###
+## Calculate difference in SOC and 14C between surface and 1m depth
 ## Climate data
 climate_14c_c <- lyr_data %>%
   dplyr::group_by(ClimateZoneAnd, UD) %>% 
@@ -89,7 +90,9 @@ climate_14c_c %>%
   rowwise() %>% 
   mutate(diff_14c = abs(median_14c_max - median_14c_min),
          diff_c = abs(median_c_max - median_c_min),
-         rel_change_c = 100-(median_c_min * 100/median_c_max))
+         rel_change_c = 100-(median_c_min * 100/median_c_max)) %>% 
+  ggplot(aes(x = ClimateZoneAnd, y = diff_14c)) +
+  geom_point(size = 3)
 
 depth_sum_c <- climate_14c_c %>% 
   dplyr::filter(ClimateZoneAnd != "volcanic soils") %>% 

@@ -13,6 +13,7 @@ library(iml)
 library(mlr3spatial)
 library(mlr3spatiotempcv) 
 library(RColorBrewer)
+library(rstatix)
 
 # Load filtered and splined data
 lyr_data <- read_csv("./Data/ISRaD_flat_splined_filled_2023-03-09.csv") %>% 
@@ -188,10 +189,10 @@ dis_clim <- lyr_data %>%
   filter(ClimateZoneAnd != "volcanic soils") %>% 
   dplyr::select(ClimateZoneAnd, pro_MAT_mod, pro_MAP_mod, pro_PET_mm_yr_mod,
                 lyr_clay_mod) %>% 
-  rename("Clay content [%]" = lyr_clay_mod,
-         "PET [mm]" = pro_PET_mm_yr_mod,
-         "MAP [mm]" = pro_MAP_mod,
-         "MAT [°C]" = pro_MAT_mod) %>% 
+  dplyr::rename("Clay content [%]" = lyr_clay_mod,
+                "PET [mm]" = pro_PET_mm_yr_mod,
+                "MAP [mm]" = pro_MAP_mod,
+                "MAT [°C]" = pro_MAT_mod) %>% 
   pivot_longer(!ClimateZoneAnd, names_to = "names", values_to = "values") %>% 
   # factor(x = character(names), 
   #        levels = c("MAT [°C]", "MAP [mm]", "PET [mm]", "Clay content [%]")) %>% 
@@ -213,10 +214,10 @@ dis_clim <- lyr_data %>%
 dis_min <- lyr_data %>% 
   dplyr::select(MineralGroupsNew, pro_MAT_mod, pro_MAP_mod, pro_PET_mm_yr_mod,
                 lyr_clay_mod) %>% 
-  rename("Clay content [%]" = lyr_clay_mod,
-         "PET [mm]" = pro_PET_mm_yr_mod,
-         "MAP [mm]" = pro_MAP_mod,
-         "MAT [°C]" = pro_MAT_mod) %>% 
+  dplyr::rename("Clay content [%]" = lyr_clay_mod,
+                "PET [mm]" = pro_PET_mm_yr_mod,
+                "MAP [mm]" = pro_MAP_mod,
+                "MAT [°C]" = pro_MAT_mod) %>% 
   pivot_longer(!MineralGroupsNew, names_to = "names", values_to = "values") %>% 
   group_by(MineralGroupsNew) %>% 
   ggplot(aes(x = MineralGroupsNew, y = values, fill = MineralGroupsNew)) +
@@ -237,4 +238,73 @@ dis_min <- lyr_data %>%
 ggarrange(dis_clim, dis_min, nrow = 2, labels = c("a)", "b)"), vjust = c(5,5))
 ggsave(file = paste0("./Figure/Figure_2_", 
                      Sys.Date(),".jpeg"), width = 9, height = 6.5, dpi = 500)
+
+### Testing statistical differences for Figure 2
+## Clay content
+# Mineralogy
+lyr_data %>% 
+  kruskal_test(lyr_clay_mod ~ MineralGroupsNew)
+
+lyr_data %>%
+  dunn_test(lyr_clay_mod ~ MineralGroupsNew, p.adjust.method = "bonferroni")
+
+# Climate
+lyr_data %>% 
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  kruskal_test(lyr_clay_mod ~ ClimateZoneAnd)
+
+lyr_data %>%
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  dunn_test(lyr_clay_mod ~ ClimateZoneAnd, p.adjust.method = "bonferroni")
+
+## PET
+# Mineralogy
+lyr_data %>% 
+  kruskal_test(pro_PET_mm_yr_mod ~ MineralGroupsNew)
+
+lyr_data %>%
+  dunn_test(pro_PET_mm_yr_mod ~ MineralGroupsNew, p.adjust.method = "bonferroni")
+
+# Climate
+lyr_data %>% 
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  kruskal_test(pro_PET_mm_yr_mod ~ ClimateZoneAnd)
+
+lyr_data %>%
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  dunn_test(pro_PET_mm_yr_mod ~ ClimateZoneAnd, p.adjust.method = "bonferroni")
+
+## MAP
+# Mineralogy
+lyr_data %>% 
+  kruskal_test(pro_MAP_mod ~ MineralGroupsNew)
+
+lyr_data %>%
+  dunn_test(pro_MAP_mod ~ MineralGroupsNew, p.adjust.method = "bonferroni")
+
+# Climate
+lyr_data %>% 
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  kruskal_test(pro_MAP_mod ~ ClimateZoneAnd)
+
+lyr_data %>%
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  dunn_test(pro_MAP_mod ~ ClimateZoneAnd, p.adjust.method = "bonferroni")
+
+## MAT
+# Mineralogy
+lyr_data %>% 
+  kruskal_test(pro_MAT_mod ~ MineralGroupsNew)
+
+lyr_data %>%
+  dunn_test(pro_MAT_mod ~ MineralGroupsNew, p.adjust.method = "bonferroni")
+
+# Climate
+lyr_data %>% 
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  kruskal_test(pro_MAT_mod ~ ClimateZoneAnd)
+
+lyr_data %>%
+  filter(ClimateZoneAnd != "volcanic soils") %>%
+  dunn_test(pro_MAT_mod ~ ClimateZoneAnd, p.adjust.method = "bonferroni")
 
