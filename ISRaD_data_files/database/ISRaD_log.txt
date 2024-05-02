@@ -1,6 +1,6 @@
 ISRaD Compilation Log 
  
- 2023-02-08 14:58:53 
+ 2024-05-02 10:45:14 
  - - - - - - - - - - - - - - - 
 
 
@@ -890,7 +890,7 @@ Summary statistics...
     pro_soil_age_note : 40
     pro_MAST : 207
     pro_MASWC : 214
-    pro_land_cover : 4303
+    pro_land_cover : 4304
     pro_lc_phenology : 247
     pro_lc_leaf_type : 230
     pro_lc_photosyn_path : 220
